@@ -1,109 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import PlayDesignerCanvas from './components/PlayDesignerCanvas';
+import AIPlayGenerator from './components/AIPlayGenerator';
 
 export default function App() {
   const [page, setPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [dashTab, setDashTab] = useState('whiteboard');
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [savedPlays, setSavedPlays] = useState(JSON.parse(localStorage.getItem('basketballPlays')) || []);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
 
   const colors = { primary: '#1a1a2e', accent: '#ff6b35', light: '#f5f5f5', white: '#ffffff', text: '#2c3e50', lightText: '#7f8c8d' };
-
-  const startDrawing = (e) => {
-    setIsDrawing(true);
-    const rect = canvasRef.current.getBoundingClientRect();
-    const ctx = canvasRef.current.getContext('2d');
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const ctx = canvasRef.current.getContext('2d');
-    ctx.strokeStyle = '#1a1a2e';
-    ctx.lineWidth = 2;
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
-  };
-
-  const clearCanvas = () => {
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-  };
-
-  const savePlay = () => {
-    const playName = prompt('Enter play name:');
-    if (playName && canvasRef.current) {
-      const newPlay = {
-        id: Date.now(),
-        name: playName,
-        image: canvasRef.current.toDataURL('image/png'),
-        date: new Date().toLocaleDateString()
-      };
-      const updated = [...savedPlays, newPlay];
-      setSavedPlays(updated);
-      localStorage.setItem('basketballPlays', JSON.stringify(updated));
-      alert('Play saved!');
-    }
-  };
-
-  const loadPlay = (playId) => {
-    const play = savedPlays.find(p => p.id === playId);
-    if (play && canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = play.image;
-    }
-  };
-
-  const deletePlay = (playId) => {
-    const updated = savedPlays.filter(p => p.id !== playId);
-    setSavedPlays(updated);
-    localStorage.setItem('basketballPlays', JSON.stringify(updated));
-  };
-
-  const downloadCanvas = () => {
-    if (canvasRef.current) {
-      const link = document.createElement('a');
-      link.href = canvasRef.current.toDataURL('image/png');
-      link.download = 'play-design.png';
-      link.click();
-    }
-  };
-
-  const generateAiAssistant = () => {
-    if (!aiPrompt.trim()) return;
-    const suggestions = {
-      'pick and roll': 'Set a screen at the top of the key. Guard rolls to basket. Use spacing to create advantages.',
-      'fast break': 'Push tempo in transition. Get 3v2 or 2v1. Finish at rim or kick out for open three.',
-      'zone defense': 'Defend areas, not players. Compress middle. Contest perimeter shots. Box out aggressively.',
-      'motion offense': 'Constant movement. Ball and player movement in sync. Create spacing. Drive and kick.',
-      'press': 'Full court or half court. Deny inbound pass. Force turnovers. Recover to defense.',
-      'post moves': 'Develop footwork. Use glass. Spin moves. Face-up three. Hook shot mastery.',
-      'shooting': 'High volume. Consistent mechanics. Game speed. Range extension. Clutch confidence.'
-    };
-
-    let response = 'AI Play Design Assistant:\n\n';
-    for (let key in suggestions) {
-      if (aiPrompt.toLowerCase().includes(key)) {
-        response += key.toUpperCase() + ':\n' + suggestions[key] + '\n\n';
-      }
-    }
-    if (response === 'AI Play Design Assistant:\n\n') {
-      response = 'Try asking about: pick and roll, fast break, zone defense, motion offense, press, post moves, or shooting.';
-    }
-    setAiResponse(response);
-  };
 
   if (page === 'landing' && !user) {
     return (
@@ -212,38 +116,14 @@ export default function App() {
             <button onClick={() => setDashTab('development')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'development' ? colors.accent : colors.white, color: dashTab === 'development' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📈 Dev</button>
             <button onClick={() => setDashTab('scouting')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'scouting' ? colors.accent : colors.white, color: dashTab === 'scouting' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📊 Scout</button>
             <button onClick={() => setDashTab('mental')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'mental' ? colors.accent : colors.white, color: dashTab === 'mental' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>🧠 Mental</button>
-            <button onClick={() => setDashTab('ai')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'ai' ? colors.accent : colors.white, color: dashTab === 'ai' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>🤖 AI</button>
           </div>
 
           {dashTab === 'whiteboard' && (
-            <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>✏️ Enhanced Whiteboard</h2>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                <button onClick={() => setIsDrawing(false)} style={{ padding: '8px 16px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>✏️ Draw</button>
-                <button onClick={clearCanvas} style={{ padding: '8px 16px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Clear</button>
-                <button onClick={savePlay} style={{ padding: '8px 16px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Save Play</button>
-                <button onClick={downloadCanvas} style={{ padding: '8px 16px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Download</button>
+            <div>
+              <PlayDesignerCanvas width={800} height={400} />
+              <div style={{ marginTop: '40px' }}>
+                <AIPlayGenerator />
               </div>
-              <canvas ref={canvasRef} width={800} height={400} style={{ border: '2px solid ' + colors.accent, borderRadius: '8px', backgroundColor: colors.white, cursor: 'crosshair', display: 'block', width: '100%', maxWidth: '800px', marginBottom: '20px' }} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)} onMouseLeave={() => setIsDrawing(false)} />
-              
-              {savedPlays.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Play Library</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                    {savedPlays.map(play => (
-                      <div key={play.id} style={{ backgroundColor: colors.light, padding: '15px', borderRadius: '8px', border: '1px solid ' + colors.accent }}>
-                        <p style={{ fontSize: '14px', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>{play.name}</p>
-                        <img src={play.image} style={{ width: '100%', height: '100px', borderRadius: '6px', objectFit: 'cover', marginBottom: '10px' }} alt={play.name} />
-                        <p style={{ fontSize: '12px', color: colors.lightText, marginBottom: '10px' }}>{play.date}</p>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button onClick={() => loadPlay(play.id)} style={{ flex: 1, padding: '6px', backgroundColor: colors.primary, color: colors.white, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>Load</button>
-                          <button onClick={() => deletePlay(play.id)} style={{ flex: 1, padding: '6px', backgroundColor: '#e74c3c', color: colors.white, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>Delete</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -327,28 +207,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {dashTab === 'ai' && (
-            <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>AI Play Design Assistant</h2>
-              <div style={{ marginBottom: '20px' }}>
-                <input
-                  type="text"
-                  placeholder="Ask: pick and roll, fast break, zone defense, motion offense, press, post moves, shooting"
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  style={{ width: '100%', padding: '12px', border: '2px solid ' + colors.accent, borderRadius: '6px', fontSize: '14px', marginBottom: '10px', boxSizing: 'border-box' }}
-                />
-                <button onClick={generateAiAssistant} style={{ width: '100%', padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>Get AI Suggestions</button>
-              </div>
-              {aiResponse && (
-                <div style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent, fontSize: '14px', color: colors.text, lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
-                  {aiResponse}
-                </div>
-              )}
-              <p style={{ fontSize: '12px', color: colors.lightText, marginTop: '15px' }}>💡 AI Assistant provides tactical guidance based on basketball concepts.</p>
             </div>
           )}
         </div>
