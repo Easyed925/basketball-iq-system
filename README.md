@@ -25,13 +25,3 @@ Click the button below to deploy this app to Vercel in one click:
 npm install
 npm start
 ```
-
----
-
-3. Click **"Commit changes"**
-
----
-
-**Tell me when this is committed!** 🚀
-
-Then we DEPLOY to Vercel and your app goes LIVE!!!
