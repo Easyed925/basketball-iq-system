@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
 import PlayDesignerCanvas from './components/PlayDesignerCanvas';
 import AIPlayGenerator from './components/AIPlayGenerator';
+import { playLibrary } from './data/playLibrary';
+
+const PRACTICE_PLANS = [
+  { num: 1, title: 'Ball Handling & Control', focus: 'Control, pressure resistance, confidence', duration: '90 min', drills: ['Stationary dribble series (10 min)', 'Two-ball dribbling (10 min)', 'Cone weave under pressure (15 min)', 'Live 1v1 dribble moves (20 min)', 'Small-sided scrimmage applying moves (25 min)'] },
+  { num: 2, title: 'Shooting Mechanics', focus: 'Form, balance, game-speed reps', duration: '90 min', drills: ['Form shooting close range (15 min)', 'Footwork into catch-and-shoot (15 min)', 'Off-the-dribble pull-ups (20 min)', 'Game-speed shooting under fatigue (20 min)', 'Competitive shooting games (20 min)'] },
+  { num: 3, title: 'Finishing at the Rim', focus: 'Strength, footwork, creativity', duration: '90 min', drills: ['Layup package both hands (15 min)', 'Contact finishes vs pads (15 min)', 'Euro step / floater work (20 min)', 'Live finishing 2v1, 3v2 (20 min)', 'Scrimmage emphasis on finishing (20 min)'] },
+  { num: 4, title: 'Passing & Spacing', focus: 'Movement, timing, decision-making', duration: '90 min', drills: ['Partner passing series (15 min)', '4-corner passing (15 min)', 'Spacing shell drill (20 min)', 'Read-and-react passing under pressure (20 min)', 'Scrimmage with pass-count minimums (20 min)'] },
+  { num: 5, title: 'Defensive Footwork', focus: 'Discipline, effort, toughness', duration: '90 min', drills: ['Defensive slide series (15 min)', 'Closeout technique (15 min)', 'On-ball 1v1 containment (20 min)', 'Help & recover rotations (20 min)', 'Live defense-only scrimmage (20 min)'] },
+  { num: 6, title: 'Transition Offense', focus: 'Speed, decision-making, spacing', duration: '90 min', drills: ['Outlet and sprint lanes (15 min)', '3v2, 2v1 transition (20 min)', 'Trailer/rim-runner reads (15 min)', 'Full-court transition scrimmage (25 min)', 'Conditioning finish (15 min)'] },
+  { num: 7, title: 'Rebounding & Toughness', focus: 'Physicality, effort, positioning', duration: '90 min', drills: ['Box-out technique (15 min)', 'Rebound and outlet (15 min)', 'Live rebounding war drill (20 min)', 'Second-chance scoring (20 min)', 'Competitive scrimmage with rebound scoring (20 min)'] },
+  { num: 8, title: 'Game Situations', focus: 'Clutch performance, pressure', duration: '90 min', drills: ['End-of-quarter scenarios (20 min)', 'Late-clock shot creation (20 min)', 'Inbounds/BLOB-SLOB sets (20 min)', 'Free-throw pressure reps (10 min)', 'Simulated close-game scrimmage (20 min)'] },
+  { num: 9, title: 'Team Offense Systems', focus: 'Installation, execution, spacing', duration: '90 min', drills: ['Walk-through core sets (20 min)', 'Half-speed execution (20 min)', 'Live reps vs scout defense (25 min)', 'Counters off primary action (15 min)', 'Scrimmage running system only (10 min)'] },
+  { num: 10, title: 'Competitive Practice', focus: 'Championship mentality, culture', duration: '90 min', drills: ['Competitive shooting contest (15 min)', 'Small-sided competitive games (25 min)', 'Full scrimmage with stakes (35 min)', 'Free throw pressure finish (15 min)'] },
+];
 
 export default function App() {
   const [page, setPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [dashTab, setDashTab] = useState('whiteboard');
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   const colors = { primary: '#1a1a2e', accent: '#ff6b35', light: '#f5f5f5', white: '#ffffff', text: '#2c3e50', lightText: '#7f8c8d' };
 
@@ -124,32 +139,54 @@ export default function App() {
               <div style={{ marginTop: '40px' }}>
                 <AIPlayGenerator />
               </div>
+              <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>📚 Play Library</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px' }}>
+                  {playLibrary.map(play => (
+                    <div key={play.id} style={{ backgroundColor: colors.light, padding: '18px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{play.name}</h3>
+                      <p style={{ fontSize: '13px', color: colors.text, marginBottom: '8px' }}>{play.description}</p>
+                      <p style={{ fontSize: '12px', color: colors.lightText, marginBottom: '4px' }}>Difficulty: {play.difficulty} · {play.offensive ? 'Offense' : 'Defense'}</p>
+                      <p style={{ fontSize: '12px', color: colors.lightText }}>Positions: {play.positions.join(', ')}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
           {dashTab === 'plans' && (
             <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>10 Elite Practice Plans</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                {[
-                  { num: 1, title: 'Ball Handling & Control', focus: 'Control, pressure resistance, confidence' },
-                  { num: 2, title: 'Shooting Mechanics', focus: 'Form, balance, game-speed reps' },
-                  { num: 3, title: 'Finishing at the Rim', focus: 'Strength, footwork, creativity' },
-                  { num: 4, title: 'Passing & Spacing', focus: 'Movement, timing, decision-making' },
-                  { num: 5, title: 'Defensive Footwork', focus: 'Discipline, effort, toughness' },
-                  { num: 6, title: 'Transition Offense', focus: 'Speed, decision-making, spacing' },
-                  { num: 7, title: 'Rebounding & Toughness', focus: 'Physicality, effort, positioning' },
-                  { num: 8, title: 'Game Situations', focus: 'Clutch performance, pressure' },
-                  { num: 9, title: 'Team Offense Systems', focus: 'Installation, execution, spacing' },
-                  { num: 10, title: 'Competitive Practice', focus: 'Championship mentality, culture' }
-                ].map(plan => (
-                  <div key={plan.num} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '10px' }}>Plan #{plan.num}</h3>
-                    <p style={{ fontSize: '14px', color: colors.text, marginBottom: '5px', fontWeight: '600' }}>{plan.title}</p>
-                    <p style={{ fontSize: '13px', color: colors.lightText }}>Focus: {plan.focus}</p>
+              {!selectedPlan ? (
+                <>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>10 Elite Practice Plans</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                    {PRACTICE_PLANS.map(plan => (
+                      <div key={plan.num} onClick={() => setSelectedPlan(plan)} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent, cursor: 'pointer' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '10px' }}>Plan #{plan.num}</h3>
+                        <p style={{ fontSize: '14px', color: colors.text, marginBottom: '5px', fontWeight: '600' }}>{plan.title}</p>
+                        <p style={{ fontSize: '13px', color: colors.lightText }}>Focus: {plan.focus}</p>
+                        <p style={{ fontSize: '12px', color: colors.accent, marginTop: '10px', fontWeight: '600' }}>View plan →</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div>
+                  <button onClick={() => setSelectedPlan(null)} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to all plans</button>
+                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '5px' }}>Plan #{selectedPlan.num}: {selectedPlan.title}</h2>
+                  <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '4px' }}>Focus: {selectedPlan.focus}</p>
+                  <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '20px' }}>Total time: {selectedPlan.duration}</p>
+                  <div style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Drill Sequence</h3>
+                    <ol style={{ paddingLeft: '20px', margin: 0 }}>
+                      {selectedPlan.drills.map((drill, i) => (
+                        <li key={i} style={{ fontSize: '14px', color: colors.text, marginBottom: '10px', lineHeight: '1.5' }}>{drill}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
