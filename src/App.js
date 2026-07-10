@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import PlayDesignerCanvas from './components/PlayDesignerCanvas';
+import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
-import { playLibrary } from './data/playLibrary';
+import { playLibrary, animatedPlays } from './data/playLibrary';
 
 const PRACTICE_PLANS = [
   { num: 1, title: 'Ball Handling & Control', focus: 'Control, pressure resistance, confidence', duration: '90 min', drills: ['Stationary dribble series (10 min)', 'Two-ball dribbling (10 min)', 'Cone weave under pressure (15 min)', 'Live 1v1 dribble moves (20 min)', 'Small-sided scrimmage applying moves (25 min)'] },
@@ -16,11 +16,54 @@ const PRACTICE_PLANS = [
   { num: 10, title: 'Competitive Practice', focus: 'Championship mentality, culture', duration: '90 min', drills: ['Competitive shooting contest (15 min)', 'Small-sided competitive games (25 min)', 'Full scrimmage with stakes (35 min)', 'Free throw pressure finish (15 min)'] },
 ];
 
+const PLAYER_DEVELOPMENT = [
+  { position: 'Point Guard', summary: 'Ball handling, decision-making, pace control', phases: [
+    { range: 'Weeks 1-4: Foundations', items: ['Two-ball dribbling for control under pressure', 'Change-of-pace and change-of-direction moves', 'Basic pick-and-roll reads (downhill vs. drop)', 'Court vision drills: scan-before-catch habit'] },
+    { range: 'Weeks 5-8: Advanced Skills', items: ['Live 1v1 and 2v2 ball screen reps', 'Pull-up shooting off the dribble at game speed', 'Advanced passing: skip passes, pocket passes', 'Transition decision-making 3v2, 2v1'] },
+    { range: 'Weeks 9-12: Game Application', items: ['Full-speed pick-and-roll vs. live defense', 'Late-clock shot creation under pressure', 'Leadership reps: calling sets, managing tempo', 'Scrimmage-based situational decision drills'] },
+  ]},
+  { position: 'Shooting Guard', summary: 'Shooting mechanics, off-ball movement, finishing', phases: [
+    { range: 'Weeks 1-4: Foundations', items: ['Form shooting close range, focus on repeatable mechanics', 'Footwork into the catch (hop vs. 1-2 step)', 'Basic off-ball movement: relocate and space', 'Ball-handling combo moves for one-on-one scoring'] },
+    { range: 'Weeks 5-8: Advanced Skills', items: ['Catch-and-shoot reps off live passes', 'Curl and fade cuts off screens', 'Pull-up jumpers off the dribble at speed', 'Finishing package: floaters, euro step, off-hand layups'] },
+    { range: 'Weeks 9-12: Game Application', items: ['Game-speed shooting under fatigue', 'Reading closeouts: shoot, drive, or pass', 'Live reps navigating multiple screens', 'Competitive scoring scrimmages with defense'] },
+  ]},
+  { position: 'Small Forward', summary: 'Versatility, slashing, perimeter defense', phases: [
+    { range: 'Weeks 1-4: Foundations', items: ['Attack closeouts one and two dribbles', 'Catch-and-shoot fundamentals from the wing', 'Defensive stance and lateral movement basics', 'Straight-line drives finishing through contact'] },
+    { range: 'Weeks 5-8: Advanced Skills', items: ['Live 1v1 attacking off the catch', 'Secondary playmaking: drive-and-kick reads', 'On-ball defense vs. multiple ball-handler moves', 'Transition finishing in traffic'] },
+    { range: 'Weeks 9-12: Game Application', items: ['Full-speed wing isolation reps', 'Help-defense rotations in live scrimmage', 'Two-way scrimmage focus: score then get a stop', 'Situational late-game wing decision-making'] },
+  ]},
+  { position: 'Power Forward', summary: 'Rebounding, mid-range skill, physicality', phases: [
+    { range: 'Weeks 1-4: Foundations', items: ['Post footwork: drop steps, up-and-under', 'Box-out technique and pursuit rebounding', 'Mid-range catch-and-shoot reps', 'Screen-setting fundamentals (angle, contact, roll)'] },
+    { range: 'Weeks 5-8: Advanced Skills', items: ['Pick-and-pop shooting off ball screens', 'Face-up moves vs. live post defense', 'Live rebounding drills vs. contact', 'Short-roll passing reads out of the pick-and-roll'] },
+    { range: 'Weeks 9-12: Game Application', items: ['Live post scoring vs. live defense', 'Competitive rebounding scrimmage segments', 'Full-speed screen-and-roll execution', 'Stretch-four shooting reps under game pressure'] },
+  ]},
+  { position: 'Center', summary: 'Rim protection, finishing, screening', phases: [
+    { range: 'Weeks 1-4: Foundations', items: ['Low-post footwork and finishing package', 'Verticality and rim-protection positioning', 'Screen-setting and roll timing', 'Outlet passing off the defensive rebound'] },
+    { range: 'Weeks 5-8: Advanced Skills', items: ['Live post scoring vs. live post defense', 'Pick-and-roll lob and short-roll reads', 'Help-side shot-contesting drills', 'Offensive rebounding and put-back finishing'] },
+    { range: 'Weeks 9-12: Game Application', items: ['Full-speed post play vs. live defense', 'Live rim-protection reps in scrimmage', 'Pick-and-roll execution under game pressure', 'Conditioning-based rebounding competitions'] },
+  ]},
+];
+
+const MENTAL_SKILLS = [
+  { title: 'Confidence', desc: 'Build belief through preparation', keyPoints: ['Confidence comes from repetition, not talent alone', 'Track improvement to reinforce self-belief', 'Replace self-doubt with a rehearsed routine'], exercise: 'Have players write down one thing they did well after every practice — build a visible record of progress.' },
+  { title: 'Focus', desc: 'Concentrate in pressure situations', keyPoints: ['Focus on the next play, not the last mistake', 'Use a consistent pre-shot or pre-possession routine', 'Narrow attention to one controllable cue at a time'], exercise: 'Practice a "reset breath" between possessions — one exhale to let go of the last play before the next one starts.' },
+  { title: 'Resilience', desc: 'Bounce back from mistakes', keyPoints: ['Mistakes are data, not identity', 'Fast recovery time separates good players from great ones', 'Model calm reactions to errors as a coach'], exercise: 'After a turnover in practice, require the player to sprint back on defense with full effort — training the physical habit of moving on.' },
+  { title: 'Coachability', desc: 'Accept feedback and improve', keyPoints: ['Ask clarifying questions instead of getting defensive', 'Apply feedback within the same possession when possible', 'Treat correction as investment, not criticism'], exercise: 'End each practice by asking each player to repeat back one piece of feedback they were given that day.' },
+  { title: 'Leadership', desc: 'Inspire and elevate teammates', keyPoints: ['Leadership is consistent effort, not just talking', 'Communicate on both ends of the floor', 'Hold teammates accountable with respect'], exercise: 'Rotate a "captain of the possession" role in scrimmages so every player practices vocal leadership.' },
+  { title: 'Clutch Performance', desc: 'Excel in high-pressure moments', keyPoints: ['Simulate pressure in practice so games feel familiar', 'Slow the moment down with a pre-decided routine', 'Focus on execution, not outcome'], exercise: 'Run end-of-game scenarios weekly (down 1, under 10 seconds) so the moment stops feeling unfamiliar on game day.' },
+  { title: 'Communication', desc: 'Effective verbal expression', keyPoints: ['Call out screens, cuts, and switches early, not late', 'Use short, consistent terms the whole team knows', 'Communicate encouragement, not just corrections'], exercise: 'Require verbal calls on every defensive possession in practice — no talk, play stops and restarts.' },
+  { title: 'Championship Mentality', desc: 'Commitment to excellence daily', keyPoints: ['Standards are set in practice, not just in games', 'Small daily habits compound over a season', 'Culture is what a team does when no one is watching'], exercise: 'Set one non-negotiable standard (e.g., sprint every line, box out every rep) and enforce it without exception.' },
+];
+
 export default function App() {
   const [page, setPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [dashTab, setDashTab] = useState('whiteboard');
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [libraryPlay, setLibraryPlay] = useState(null);
+  const [libraryLoadKey, setLibraryLoadKey] = useState(0);
 
   const colors = { primary: '#1a1a2e', accent: '#ff6b35', light: '#f5f5f5', white: '#ffffff', text: '#2c3e50', lightText: '#7f8c8d' };
 
@@ -135,12 +178,33 @@ export default function App() {
 
           {dashTab === 'whiteboard' && (
             <div>
-              <PlayDesignerCanvas width={800} height={400} />
+              <PlayAnimator key={libraryLoadKey} initialPlay={libraryPlay} />
+
+              <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>📚 Load a Play</h2>
+                <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>These load directly onto the whiteboard above, fully animated — customize them or use them as a starting point.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px' }}>
+                  {animatedPlays.map(play => (
+                    <div key={play.id} style={{ backgroundColor: colors.light, padding: '18px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{play.name}</h3>
+                      <p style={{ fontSize: '13px', color: colors.text, marginBottom: '10px' }}>{play.description}</p>
+                      <button
+                        onClick={() => { setLibraryPlay(play); setLibraryLoadKey(k => k + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        style={{ padding: '8px 14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                      >
+                        Load onto Whiteboard →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ marginTop: '40px' }}>
                 <AIPlayGenerator />
               </div>
+
               <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>📚 Play Library</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>📖 Play Concepts Library</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px' }}>
                   {playLibrary.map(play => (
                     <div key={play.id} style={{ backgroundColor: colors.light, padding: '18px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
@@ -192,19 +256,43 @@ export default function App() {
 
           {dashTab === 'development' && (
             <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Player Development</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                {['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'].map((pos, i) => (
-                  <div key={i} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>{pos}</h3>
-                    <div style={{ fontSize: '13px', color: colors.text, lineHeight: '1.8' }}>
-                      <p><strong>Weeks 1-4:</strong> Foundations</p>
-                      <p><strong>Weeks 5-8:</strong> Advanced skills</p>
-                      <p><strong>Weeks 9-12:</strong> Game application</p>
-                    </div>
+              {!selectedPosition ? (
+                <>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Player Development</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                    {PLAYER_DEVELOPMENT.map((pos, i) => (
+                      <div key={i} onClick={() => setSelectedPosition(pos)} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent, cursor: 'pointer' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '10px' }}>{pos.position}</h3>
+                        <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '10px' }}>{pos.summary}</p>
+                        <div style={{ fontSize: '13px', color: colors.text, lineHeight: '1.8' }}>
+                          <p><strong>Weeks 1-4:</strong> Foundations</p>
+                          <p><strong>Weeks 5-8:</strong> Advanced skills</p>
+                          <p><strong>Weeks 9-12:</strong> Game application</p>
+                        </div>
+                        <p style={{ fontSize: '12px', color: colors.accent, marginTop: '10px', fontWeight: '600' }}>View full plan →</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div>
+                  <button onClick={() => setSelectedPosition(null)} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to all positions</button>
+                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '5px' }}>{selectedPosition.position}</h2>
+                  <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '20px' }}>{selectedPosition.summary}</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {selectedPosition.phases.map((phase, i) => (
+                      <div key={i} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>{phase.range}</h3>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                          {phase.items.map((item, j) => (
+                            <li key={j} style={{ fontSize: '14px', color: colors.text, marginBottom: '8px', lineHeight: '1.5' }}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -226,24 +314,38 @@ export default function App() {
 
           {dashTab === 'mental' && (
             <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Mental Skills Framework</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                {[
-                  { title: 'Confidence', desc: 'Build belief through preparation' },
-                  { title: 'Focus', desc: 'Concentrate in pressure situations' },
-                  { title: 'Resilience', desc: 'Bounce back from mistakes' },
-                  { title: 'Coachability', desc: 'Accept feedback and improve' },
-                  { title: 'Leadership', desc: 'Inspire and elevate teammates' },
-                  { title: 'Clutch Performance', desc: 'Excel in high-pressure moments' },
-                  { title: 'Communication', desc: 'Effective verbal expression' },
-                  { title: 'Championship Mentality', desc: 'Commitment to excellence daily' }
-                ].map((skill, i) => (
-                  <div key={i} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '10px' }}>{skill.title}</h3>
-                    <p style={{ fontSize: '14px', color: colors.lightText }}>{skill.desc}</p>
+              {!selectedSkill ? (
+                <>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Mental Skills Framework</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                    {MENTAL_SKILLS.map((skill, i) => (
+                      <div key={i} onClick={() => setSelectedSkill(skill)} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent, cursor: 'pointer' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '10px' }}>{skill.title}</h3>
+                        <p style={{ fontSize: '14px', color: colors.lightText }}>{skill.desc}</p>
+                        <p style={{ fontSize: '12px', color: colors.accent, marginTop: '10px', fontWeight: '600' }}>View framework →</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div>
+                  <button onClick={() => setSelectedSkill(null)} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to all skills</button>
+                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '5px' }}>{selectedSkill.title}</h2>
+                  <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '20px' }}>{selectedSkill.desc}</p>
+                  <div style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent, marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Key Points</h3>
+                    <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                      {selectedSkill.keyPoints.map((point, j) => (
+                        <li key={j} style={{ fontSize: '14px', color: colors.text, marginBottom: '8px', lineHeight: '1.5' }}>{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Coaching Exercise</h3>
+                    <p style={{ fontSize: '14px', color: colors.text, lineHeight: '1.6' }}>{selectedSkill.exercise}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
