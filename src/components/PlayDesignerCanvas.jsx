@@ -42,21 +42,38 @@ const PlayDesignerCanvas = ({ width = 800, height = 400 }) => {
     ctx.arc(width * 0.75, height / 2, height * 0.2, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Three-point line (left)
-    ctx.beginPath();
-    ctx.moveTo(0, height * 0.15);
-    ctx.lineTo(width * 0.3, height * 0.15);
-    ctx.arc(width * 0.25, height / 2, height * 0.35, -Math.PI / 6, Math.PI / 6);
-    ctx.lineTo(0, height * 0.85);
-    ctx.stroke();
+    // Three-point lines (left and right), drawn with geometry that
+    // actually connects the corner straight lines to the arc
+    const drawThreePointLine = (mirrored) => {
+      ctx.save();
+      if (mirrored) {
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+      }
+      const basketX = width * 0.05;
+      const centerY = height / 2;
+      const radius = height * 0.44;
+      const cornerYTop = height * 0.08;
+      const cornerYBottom = height * 0.92;
+      const dyTop = cornerYTop - centerY;
+      const dxTop = Math.sqrt(Math.max(0, radius * radius - dyTop * dyTop));
+      const cornerX = basketX + dxTop;
+      const angleTop = Math.atan2(dyTop, dxTop);
+      const angleBottom = -angleTop;
 
-    // Three-point line (right)
-    ctx.beginPath();
-    ctx.moveTo(width, height * 0.15);
-    ctx.lineTo(width * 0.7, height * 0.15);
-    ctx.arc(width * 0.75, height / 2, height * 0.35, Math.PI - Math.PI / 6, Math.PI + Math.PI / 6);
-    ctx.lineTo(width, height * 0.85);
-    ctx.stroke();
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, cornerYTop);
+      ctx.lineTo(cornerX, cornerYTop);
+      ctx.arc(basketX, centerY, radius, angleTop, angleBottom, false);
+      ctx.lineTo(0, cornerYBottom);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    drawThreePointLine(false);
+    drawThreePointLine(true);
 
     // Baskets (circles)
     ctx.fillStyle = '#FF6B35';
