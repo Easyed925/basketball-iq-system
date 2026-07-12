@@ -40,7 +40,7 @@ const CourtSVG = React.forwardRef(function CourtSVG({ children, onPointerDown, o
     <svg
       ref={ref}
       viewBox={`0 0 ${COURT_WIDTH} ${COURT_HEIGHT}`}
-      style={{ width: '100%', height: 'auto', maxHeight: '65vh', display: 'block', ...style }}
+      style={{ width: '100%', height: 'auto', maxHeight: 'min(50vh, 380px)', display: 'block', ...style }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

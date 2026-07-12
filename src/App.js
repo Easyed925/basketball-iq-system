@@ -157,18 +157,18 @@ export default function App() {
   if (page === 'dashboard' && user) {
     return (
       <div style={{ backgroundColor: colors.light, minHeight: '100vh', paddingBottom: '40px' }}>
-        <div style={{ backgroundColor: colors.white, borderBottom: '2px solid ' + colors.accent, padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="app-header" style={{ backgroundColor: colors.white, borderBottom: '2px solid ' + colors.accent, padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '20px', fontWeight: '700', color: colors.primary }}>🏀 Basketball IQ</span>
           <button onClick={() => { setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
         </div>
 
         <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', color: colors.white, padding: '40px', borderRadius: '12px', marginBottom: '40px', textAlign: 'center' }}>
+          <div className="app-hero" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', color: colors.white, padding: '40px', borderRadius: '12px', marginBottom: '40px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '10px' }}>Welcome, Coach!</h1>
             <p>You're now part of an elite network of championship programs</p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: '2px solid ' + colors.light, paddingBottom: '20px', flexWrap: 'wrap' }}>
+          <div className="app-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: '2px solid ' + colors.light, paddingBottom: '20px', flexWrap: 'wrap' }}>
             <button onClick={() => setDashTab('whiteboard')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'whiteboard' ? colors.accent : colors.white, color: dashTab === 'whiteboard' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>✏️ Whiteboard</button>
             <button onClick={() => setDashTab('plans')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'plans' ? colors.accent : colors.white, color: dashTab === 'plans' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📋 Plans</button>
             <button onClick={() => setDashTab('development')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'development' ? colors.accent : colors.white, color: dashTab === 'development' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📈 Dev</button>

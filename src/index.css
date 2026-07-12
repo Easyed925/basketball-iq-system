@@ -23,22 +23,59 @@ img, svg {
   height: auto;
 }
 
-/* Whiteboard toolbar: shrink buttons on narrow screens instead of
-   wrapping into a tall, cramped stack. Inline JS styles set color per
-   button state, so these use !important to win on the properties that
-   matter for fitting the screen. */
-@media (max-width: 480px) {
+/* Whiteboard toolbar: compact by default, using clamp() so sizing
+   scales continuously with the actual viewport instead of only
+   changing below one fixed breakpoint. This covers landscape phones,
+   which are short but not narrow, as well as portrait phones. */
+.pa-wrapper {
+  padding: clamp(8px, 2vw, 20px) !important;
+}
+.pa-toolbar {
+  gap: clamp(4px, 1vw, 8px) !important;
+}
+.pa-btn {
+  padding: clamp(5px, 1.2vw, 8px) clamp(7px, 2vw, 12px) !important;
+  font-size: clamp(10px, 2.2vw, 13px) !important;
+}
+.pa-court-wrap {
+  border-width: 1px !important;
+}
+
+/* Extra headroom saved on short (landscape phone) screens specifically,
+   since height — not width — is the constraint there. */
+@media (max-height: 500px) {
   .pa-wrapper {
-    padding: 10px !important;
+    padding: 6px !important;
   }
   .pa-toolbar {
-    gap: 5px !important;
+    gap: 3px !important;
+    margin-bottom: 6px !important;
   }
   .pa-btn {
-    padding: 6px 8px !important;
-    font-size: 11px !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
   }
-  .pa-court-wrap {
-    border-width: 1px !important;
+  .app-header {
+    padding: 8px 16px !important;
+  }
+  .app-hero {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+  }
+  .app-hero h1 {
+    font-size: 18px !important;
+    margin-bottom: 2px !important;
+  }
+  .app-hero p {
+    display: none;
+  }
+  .app-tabs {
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+  }
+  .app-tabs button {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
   }
 }
