@@ -44,6 +44,21 @@ const PlayAnimator = ({ initialPlay }) => {
   const draggingRef = useRef(null); // { type: 'player'|'ball', id }
   const cancelledRef = useRef(false);
 
+  // Fallback for mobile browsers that don't fully honor touch-action on
+  // SVG child elements: only block the page's own scroll while a token
+  // is actively being dragged, never at any other time.
+  useEffect(() => {
+    const node = svgRef.current;
+    if (!node) return undefined;
+    const handler = (e) => {
+      if (draggingRef.current) e.preventDefault();
+    };
+    node.addEventListener('touchmove', handler, { passive: false });
+    return () => node.removeEventListener('touchmove', handler);
+  }, []);
+
+  useEffect(() => () => { cancelledRef.current = true; }, []);
+
   useEffect(() => {
     if (initialPlay) {
       setRoster(initialPlay.roster || makeInitialRoster());
@@ -224,6 +239,7 @@ const PlayAnimator = ({ initialPlay }) => {
 
   const toolButton = (id, label) => (
     <button
+      className="pa-btn"
       onClick={() => { setTool(id); setArrowDraft(null); }}
       style={{
         padding: '8px 12px',
@@ -241,30 +257,30 @@ const PlayAnimator = ({ initialPlay }) => {
   );
 
   return (
-    <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px' }}>
+    <div className="pa-wrapper" style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px' }}>
       <h3 style={{ color: '#1a1a2e', marginBottom: '15px', fontWeight: '700' }}>🏀 Play Design Whiteboard</h3>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+      <div className="pa-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
         {toolButton('select', '↖ Move')}
         {toolButton('add-offense', '+ Offense')}
         {toolButton('add-defense', '+ Defense')}
         {toolButton('cut', '↗ Cut')}
         {toolButton('pass', '⇢ Pass')}
         {toolButton('screen', '⊤ Screen')}
-        <button onClick={clearArrows} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Clear Arrows</button>
+        <button className="pa-btn" onClick={clearArrows} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Clear Arrows</button>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-        <button onClick={isPlaying ? stop : play} disabled={steps.length < 2} style={{ padding: '8px 16px', backgroundColor: steps.length < 2 ? '#cccccc' : '#1a1a2e', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: steps.length < 2 ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '13px' }}>
+      <div className="pa-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+        <button className="pa-btn" onClick={isPlaying ? stop : play} disabled={steps.length < 2} style={{ padding: '8px 16px', backgroundColor: steps.length < 2 ? '#cccccc' : '#1a1a2e', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: steps.length < 2 ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '13px' }}>
           {isPlaying ? '⏸ Stop' : '▶ Play Sequence'}
         </button>
-        <button onClick={resetPlay} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>⟲ Reset</button>
+        <button className="pa-btn" onClick={resetPlay} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>⟲ Reset</button>
         <span style={{ fontSize: '13px', color: '#7f8c8d', marginLeft: '8px' }}>Step {currentStep + 1} of {steps.length}</span>
-        <button onClick={() => setCurrentStep((i) => Math.max(0, i - 1))} disabled={isPlaying || currentStep === 0} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}>‹</button>
-        <button onClick={() => setCurrentStep((i) => Math.min(steps.length - 1, i + 1))} disabled={isPlaying || currentStep === steps.length - 1} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}>›</button>
-        <button onClick={addStep} disabled={isPlaying} style={{ padding: '8px 12px', backgroundColor: '#2980b9', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>+ Add Step</button>
-        <button onClick={deleteStep} disabled={isPlaying || steps.length <= 1} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Delete Step</button>
-        <button onClick={saveToLibrary} style={{ padding: '8px 12px', backgroundColor: '#27ae60', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>💾 Save Play</button>
+        <button className="pa-btn" onClick={() => setCurrentStep((i) => Math.max(0, i - 1))} disabled={isPlaying || currentStep === 0} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}>‹</button>
+        <button className="pa-btn" onClick={() => setCurrentStep((i) => Math.min(steps.length - 1, i + 1))} disabled={isPlaying || currentStep === steps.length - 1} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}>›</button>
+        <button className="pa-btn" onClick={addStep} disabled={isPlaying} style={{ padding: '8px 12px', backgroundColor: '#2980b9', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>+ Add Step</button>
+        <button className="pa-btn" onClick={deleteStep} disabled={isPlaying || steps.length <= 1} style={{ padding: '8px 12px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Delete Step</button>
+        <button className="pa-btn" onClick={saveToLibrary} style={{ padding: '8px 12px', backgroundColor: '#27ae60', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>💾 Save Play</button>
       </div>
 
       {savedMessage && <p style={{ fontSize: '12px', color: '#27ae60', marginBottom: '10px' }}>{savedMessage}</p>}
@@ -275,7 +291,7 @@ const PlayAnimator = ({ initialPlay }) => {
         </p>
       )}
 
-      <div style={{ border: '2px solid #ff6b35', borderRadius: '8px', overflow: 'hidden', maxWidth: '900px' }}>
+      <div className="pa-court-wrap" style={{ border: '2px solid #ff6b35', borderRadius: '8px', overflow: 'hidden', maxWidth: '900px', width: '100%' }}>
         <CourtSVG
           ref={svgRef}
           onPointerDown={handleCourtPointerDown}
@@ -324,7 +340,7 @@ const PlayAnimator = ({ initialPlay }) => {
             stroke="#1a1a2e"
             strokeWidth={0.15}
             onPointerDown={(e) => handlePointerDownToken(e, 'ball', 'ball')}
-            style={{ cursor: tool === 'select' ? 'grab' : 'default' }}
+            style={{ cursor: tool === 'select' ? 'grab' : 'default', touchAction: tool === 'select' ? 'none' : 'auto' }}
           />
 
           {roster.map((p) => {
@@ -334,7 +350,7 @@ const PlayAnimator = ({ initialPlay }) => {
               <g
                 key={p.id}
                 onPointerDown={(e) => handlePointerDownToken(e, 'player', p.id)}
-                style={{ cursor: tool === 'select' ? 'grab' : 'default' }}
+                style={{ cursor: tool === 'select' ? 'grab' : 'default', touchAction: tool === 'select' ? 'none' : 'auto' }}
               >
                 <circle
                   cx={pos.x}
