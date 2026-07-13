@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
+import CoachNotes from './components/CoachNotes';
 import { playLibrary, animatedPlays } from './data/playLibrary';
 import logo from './assets/logo.png';
 
@@ -179,6 +180,7 @@ export default function App() {
             <button onClick={() => setDashTab('development')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'development' ? colors.accent : colors.white, color: dashTab === 'development' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📈 Dev</button>
             <button onClick={() => setDashTab('scouting')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'scouting' ? colors.accent : colors.white, color: dashTab === 'scouting' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>📊 Scout</button>
             <button onClick={() => setDashTab('mental')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'mental' ? colors.accent : colors.white, color: dashTab === 'mental' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>🧠 Mental</button>
+            <button onClick={() => setDashTab('notes')} style={{ padding: '10px 20px', backgroundColor: dashTab === 'notes' ? colors.accent : colors.white, color: dashTab === 'notes' ? colors.white : colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>🎙️ Notes</button>
           </div>
 
           {dashTab === 'whiteboard' && (
@@ -353,6 +355,8 @@ export default function App() {
               )}
             </div>
           )}
+
+          {dashTab === 'notes' && <CoachNotes />}
         </div>
       </div>
     );
