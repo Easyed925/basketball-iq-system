@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
 import { playLibrary, animatedPlays } from './data/playLibrary';
+import logo from './assets/logo.png';
 
 const PRACTICE_PLANS = [
   { num: 1, title: 'Ball Handling & Control', focus: 'Control, pressure resistance, confidence', duration: '90 min', drills: ['Stationary dribble series (10 min)', 'Two-ball dribbling (10 min)', 'Cone weave under pressure (15 min)', 'Live 1v1 dribble moves (20 min)', 'Small-sided scrimmage applying moves (25 min)'] },
@@ -71,7 +72,8 @@ export default function App() {
     return (
       <div style={{ minHeight: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: colors.light }}>
         <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', color: colors.white, padding: '80px 20px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '48px', fontWeight: '700', marginBottom: '20px' }}>🏀 Basketball IQ System</h1>
+          <img src={logo} alt="Basketball IQ System" style={{ width: '84px', height: '84px', marginBottom: '16px' }} />
+          <h1 style={{ fontSize: '48px', fontWeight: '700', marginBottom: '20px' }}>Basketball IQ System</h1>
           <p style={{ fontSize: '18px', marginBottom: '30px', opacity: 0.9 }}>Elite coaching toolkit for championship programs</p>
           <button onClick={() => setPage('signup')} style={{ padding: '14px 32px', fontSize: '16px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: colors.accent, color: colors.white, marginRight: '15px' }}>Start Free Trial</button>
           <button onClick={() => setPage('login')} style={{ padding: '14px 32px', fontSize: '16px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: colors.white, color: colors.primary }}>Sign In</button>
@@ -158,7 +160,10 @@ export default function App() {
     return (
       <div style={{ backgroundColor: colors.light, minHeight: '100vh', paddingBottom: '40px' }}>
         <div className="app-header" style={{ backgroundColor: colors.white, borderBottom: '2px solid ' + colors.accent, padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '20px', fontWeight: '700', color: colors.primary }}>🏀 Basketball IQ</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '20px', fontWeight: '700', color: colors.primary }}>
+            <img src={logo} alt="Basketball IQ System" style={{ width: '32px', height: '32px' }} />
+            Basketball IQ
+          </span>
           <button onClick={() => { setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
         </div>
 
