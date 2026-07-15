@@ -1,42 +1,59 @@
 import React, { useState } from 'react';
 
-const AIPlayGenerator = () => {
+const EXAMPLE_PROMPTS = [
+  'Give me a play to beat a 2-3 zone',
+  'Backdoor cut for a slow-footed big',
+  'Quick set to get our best shooter open off a screen',
+  'Late-game inbounds play with 5 seconds left',
+];
+
+const AIPlayGenerator = ({ onPlayGenerated }) => {
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [lastLoaded, setLastLoaded] = useState('');
 
-  const handleGenerate = () => {
+  const generate = async (text) => {
+    const usePrompt = (text ?? prompt).trim();
+    if (!usePrompt || loading) return;
     setLoading(true);
-    // Placeholder - will be connected to real AI in Phase 2
-    setTimeout(() => {
-      setResponse(`
-AI Play Design Assistant - Coming Soon!
+    setError('');
+    setLastLoaded('');
 
-This feature will generate custom plays based on your coaching needs.
-
-Try asking about:
-- Pick and roll variations
-- Fast break opportunities
-- Zone defense setups
-- Motion offense patterns
-- Transition strategies
-
-In Phase 2, this will use real AI powered by Claude to generate professional-level plays.
-      `);
+    try {
+      const res = await fetch('/api/generate-play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: usePrompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong generating that play.');
+        return;
+      }
+      onPlayGenerated(data);
+      setLastLoaded(data.name || 'Your play');
+    } catch (e) {
+      setError('Couldn\u2019t reach the server. Check your connection and try again.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '12px' }}>
-      <h3 style={{ color: '#1a1a2e', marginBottom: '15px', fontWeight: '700' }}>🤖 AI Play Designer (Phase 2)</h3>
+      <h3 style={{ color: '#1a1a2e', marginBottom: '6px', fontWeight: '700' }}>🤖 AI Play Design Assistant</h3>
+      <p style={{ fontSize: '13px', color: '#7f8c8d', marginBottom: '15px' }}>
+        Describe what you need in plain language \u2014 Claude designs the play and loads it straight onto the whiteboard above.
+      </p>
 
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '15px' }}>
         <input
           type="text"
-          placeholder="Describe the play you want to design..."
+          placeholder="e.g. give me a play to beat a 2-3 zone"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') generate(); }}
           style={{
             width: '100%',
             padding: '12px',
@@ -48,44 +65,58 @@ In Phase 2, this will use real AI powered by Claude to generate professional-lev
           }}
         />
         <button
-          onClick={handleGenerate}
-          disabled={loading}
+          onClick={() => generate()}
+          disabled={loading || !prompt.trim()}
           style={{
             width: '100%',
             padding: '12px',
-            backgroundColor: loading ? '#cccccc' : '#ff6b35',
+            backgroundColor: loading || !prompt.trim() ? '#cccccc' : '#ff6b35',
             color: '#ffffff',
             border: 'none',
             borderRadius: '6px',
             fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
+            cursor: loading || !prompt.trim() ? 'not-allowed' : 'pointer',
             fontSize: '14px',
           }}
         >
-          {loading ? 'Generating...' : 'Generate Play'}
+          {loading ? 'Designing your play\u2026' : '\u2728 Generate Play'}
         </button>
       </div>
 
-      {response && (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            padding: '20px',
-            borderRadius: '8px',
-            border: '2px solid #ff6b35',
-            fontSize: '14px',
-            color: '#2c3e50',
-            lineHeight: '1.8',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {response}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px' }}>
+        {EXAMPLE_PROMPTS.map((ex) => (
+          <button
+            key={ex}
+            onClick={() => { setPrompt(ex); generate(ex); }}
+            disabled={loading}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#ffffff',
+              color: '#1a1a2e',
+              border: '1px solid #ccc',
+              borderRadius: '20px',
+              fontSize: '12px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {ex}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '12px 16px', marginBottom: '10px' }}>
+          <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{error}</p>
         </div>
       )}
 
-      <p style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '15px' }}>
-        💡 Full AI integration coming in Phase 2. Will generate real plays with Claude AI.
-      </p>
+      {lastLoaded && !error && (
+        <div style={{ backgroundColor: '#eafaf1', border: '1px solid #27ae60', borderRadius: '8px', padding: '12px 16px' }}>
+          <p style={{ fontSize: '13px', color: '#1e8449', margin: 0, fontWeight: '600' }}>
+            \u2713 "{lastLoaded}" loaded onto the whiteboard above \u2191
+          </p>
+        </div>
+      )}
     </div>
   );
 };

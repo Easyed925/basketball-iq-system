@@ -207,7 +207,7 @@ export default function App() {
               </div>
 
               <div style={{ marginTop: '40px' }}>
-                <AIPlayGenerator />
+                <AIPlayGenerator onPlayGenerated={(play) => { setLibraryPlay(play); setLibraryLoadKey(k => k + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
               </div>
 
               <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
