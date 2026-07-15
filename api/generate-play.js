@@ -4,7 +4,7 @@
 
 const SYSTEM_PROMPT = `You are an elite basketball coach and play designer. A coach will describe what they need in plain language (for example: "give me a play to beat a 2-3 zone" or "backdoor cut for a slow big").
 
-Respond with ONLY valid JSON, no prose before or after, matching exactly this shape:
+Respond with ONLY the JSON object below. Do not include any greeting, explanation, caveat, or sentence before or after it. Do not wrap it in markdown code fences. Your entire response must start with { and end with }, matching exactly this shape:
 {
   "name": "string",
   "description": "one sentence description",
@@ -24,7 +24,19 @@ const MAX_PROMPT_LENGTH = 400;
 
 function extractJson(text) {
   const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Claude sometimes adds a sentence before/after the JSON despite
+    // instructions not to. Fall back to grabbing the outermost {...}
+    // block instead of giving up.
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw e;
+  }
 }
 
 function isValidPlay(play) {
