@@ -78,7 +78,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: 2000,
+        max_tokens: 4096,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -93,7 +93,10 @@ module.exports = async function handler(req, res) {
     const data = await response.json();
     const textBlock = (data.content || []).find((b) => b.type === 'text');
     if (!textBlock) {
-      res.status(502).json({ error: 'No text response from Claude.' });
+      const blockTypes = (data.content || []).map((b) => b.type).join(', ') || 'none';
+      res.status(502).json({
+        error: `No text response from Claude (stop reason: ${data.stop_reason || 'unknown'}, content blocks: [${blockTypes}]). Try again or rephrase.`,
+      });
       return;
     }
 
@@ -101,12 +104,16 @@ module.exports = async function handler(req, res) {
     try {
       play = extractJson(textBlock.text);
     } catch (e) {
-      res.status(502).json({ error: 'Claude\u2019s response wasn\u2019t valid play data. Try rephrasing your request.' });
+      res.status(502).json({
+        error: `Claude\u2019s response wasn\u2019t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 120)})`,
+      });
       return;
     }
 
     if (!isValidPlay(play)) {
-      res.status(502).json({ error: 'Claude\u2019s response was missing required play data. Try rephrasing your request.' });
+      res.status(502).json({
+        error: `Claude\u2019s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 120)})`,
+      });
       return;
     }
 
