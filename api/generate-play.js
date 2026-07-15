@@ -24,19 +24,31 @@ const MAX_PROMPT_LENGTH = 400;
 
 function extractJson(text) {
   const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch (e) {
-    // Claude sometimes adds a sentence before/after the JSON despite
-    // instructions not to. Fall back to grabbing the outermost {...}
-    // block instead of giving up.
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      return JSON.parse(cleaned.slice(start, end + 1));
-    }
-    throw e;
+
+  const attempts = [];
+  attempts.push(cleaned);
+
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    attempts.push(cleaned.slice(start, end + 1));
   }
+
+  // LLMs frequently leave a trailing comma before a closing } or ] —
+  // valid-looking JSON that strict JSON.parse rejects. Try a repaired
+  // version of each candidate too.
+  const repaired = attempts.map((a) => a.replace(/,\s*([}\]])/g, '$1'));
+  attempts.push(...repaired);
+
+  let lastError;
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
 }
 
 function isValidPlay(play) {
@@ -105,14 +117,14 @@ module.exports = async function handler(req, res) {
       play = extractJson(textBlock.text);
     } catch (e) {
       res.status(502).json({
-        error: `Claude\u2019s response wasn\u2019t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 120)})`,
+        error: `Claude\u2019s response wasn\u2019t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
       });
       return;
     }
 
     if (!isValidPlay(play)) {
       res.status(502).json({
-        error: `Claude\u2019s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 120)})`,
+        error: `Claude\u2019s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
       });
       return;
     }
