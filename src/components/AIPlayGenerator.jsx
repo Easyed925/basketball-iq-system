@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../services/supabaseClient';
 
 const EXAMPLE_PROMPTS = [
   'Give me a play to beat a 2-3 zone',
@@ -21,9 +22,16 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
     setLastLoaded('');
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session && sessionData.session.access_token;
+      if (!token) {
+        setError('Please sign in again \u2014 your session may have expired.');
+        return;
+      }
+
       const res = await fetch('/api/generate-play', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ prompt: usePrompt }),
       });
       const data = await res.json();

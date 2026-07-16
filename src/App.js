@@ -3,6 +3,7 @@ import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
 import CoachNotes from './components/CoachNotes';
 import { playLibrary, animatedPlays } from './data/playLibrary';
+import { supabase } from './services/supabaseClient';
 import logo from './assets/logo.png';
 
 const PRACTICE_PLANS = [
@@ -60,14 +61,49 @@ const MENTAL_SKILLS = [
 export default function App() {
   const [page, setPage] = useState('landing');
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [dashTab, setDashTab] = useState('whiteboard');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [libraryPlay, setLibraryPlay] = useState(null);
   const [libraryLoadKey, setLibraryLoadKey] = useState(0);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupTeam, setSignupTeam] = useState('');
+  const [signupAge, setSignupAge] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupError, setSignupError] = useState('');
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session ? data.session.user : null);
+      if (data.session) setPage('dashboard');
+      setAuthLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session ? session.user : null);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const colors = { primary: '#1a1a2e', accent: '#ff6b35', light: '#f5f5f5', white: '#ffffff', text: '#2c3e50', lightText: '#7f8c8d' };
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: colors.light }}>
+        <img src={logo} alt="Basketball IQ System" style={{ width: '60px', height: '60px', opacity: 0.6 }} />
+      </div>
+    );
+  }
 
   if (page === 'landing' && !user) {
     return (
@@ -114,14 +150,35 @@ export default function App() {
   }
 
   if (page === 'login' && !user) {
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      setLoginError('');
+      setLoginLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+      setLoginLoading(false);
+      if (error) {
+        setLoginError(error.message);
+        return;
+      }
+      setUser(data.user);
+      setPage('dashboard');
+    };
+
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
         <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textAlign: 'center', marginBottom: '30px' }}>Sign In</h1>
-          <form onSubmit={(e) => { e.preventDefault(); setUser({ email: 'coach@example.com' }); setPage('dashboard'); }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <input type="email" placeholder="Email" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
-            <input type="password" placeholder="Password" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
-            <button type="submit" style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Sign In</button>
+          {loginError && (
+            <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
+              <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{loginError}</p>
+            </div>
+          )}
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+            <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+            <button type="submit" disabled={loginLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: loginLoading ? 'not-allowed' : 'pointer' }}>
+              {loginLoading ? 'Signing in\u2026' : 'Sign In'}
+            </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('signup')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Create account</button></p>
           <p style={{ textAlign: 'center', fontSize: '14px' }}><button onClick={() => setPage('landing')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Back</button></p>
@@ -131,15 +188,55 @@ export default function App() {
   }
 
   if (page === 'signup' && !user) {
+    const handleSignup = async (e) => {
+      e.preventDefault();
+      setSignupError('');
+      setSignupLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: { data: { full_name: signupName, team_name: signupTeam, age_group: signupAge } },
+      });
+      setSignupLoading(false);
+      if (error) {
+        setSignupError(error.message);
+        return;
+      }
+      if (data.session) {
+        setUser(data.user);
+        setPage('dashboard');
+      } else {
+        // Email confirmation is required before a session exists.
+        setSignupSuccess(true);
+      }
+    };
+
+    if (signupSuccess) {
+      return (
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+          <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Check your email</h1>
+            <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>We sent a confirmation link to <strong>{signupEmail}</strong>. Click it to activate your account, then come back and sign in.</p>
+            <button onClick={() => { setSignupSuccess(false); setPage('login'); }} style={{ padding: '12px 24px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Go to Sign In</button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
         <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textAlign: 'center', marginBottom: '30px' }}>Start Free Trial</h1>
-          <form onSubmit={(e) => { e.preventDefault(); setUser({ email: 'coach@example.com' }); setPage('dashboard'); }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <input type="text" placeholder="Coach Name" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
-            <input type="email" placeholder="Email" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
-            <input type="text" placeholder="Team Name" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} />
-            <select style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required>
+          {signupError && (
+            <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
+              <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{signupError}</p>
+            </div>
+          )}
+          <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <input type="text" placeholder="Coach Name" value={signupName} onChange={(e) => setSignupName(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+            <input type="email" placeholder="Email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+            <input type="text" placeholder="Team Name" value={signupTeam} onChange={(e) => setSignupTeam(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} />
+            <select value={signupAge} onChange={(e) => setSignupAge(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required>
               <option value="">Select age group</option>
               <option value="8-10">8-10 Year Olds</option>
               <option value="10-12">10-12 Year Olds</option>
@@ -147,8 +244,10 @@ export default function App() {
               <option value="hs">High School</option>
               <option value="college">College</option>
             </select>
-            <input type="password" placeholder="Password" style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
-            <button type="submit" style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Create Account</button>
+            <input type="password" placeholder="Password (min 6 characters)" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+            <button type="submit" disabled={signupLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: signupLoading ? 'not-allowed' : 'pointer' }}>
+              {signupLoading ? 'Creating account\u2026' : 'Create Account'}
+            </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('login')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Already have account?</button></p>
           <p style={{ textAlign: 'center', fontSize: '14px' }}><button onClick={() => setPage('landing')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Back</button></p>
@@ -165,7 +264,7 @@ export default function App() {
             <img src={logo} alt="Basketball IQ System" style={{ width: '32px', height: '32px' }} />
             Basketball IQ
           </span>
-          <button onClick={() => { setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
+          <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
         </div>
 
         <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
