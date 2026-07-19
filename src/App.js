@@ -80,6 +80,35 @@ export default function App() {
   const [signupError, setSignupError] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [hasAccess, setHasAccess] = useState(null); // null = checking, true/false once known
+  const [accessReason, setAccessReason] = useState('');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [justReturnedFromCheckout, setJustReturnedFromCheckout] = useState(
+    typeof window !== 'undefined' && window.location.search.includes('checkout=success')
+  );
+
+  const checkAccess = React.useCallback(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session && sessionData.session.access_token;
+    if (!token) {
+      setHasAccess(false);
+      return false;
+    }
+    try {
+      const res = await fetch('/api/check-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setHasAccess(Boolean(data.access));
+      setAccessReason(data.reason || '');
+      return Boolean(data.access);
+    } catch (e) {
+      setHasAccess(false);
+      return false;
+    }
+  }, []);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -94,6 +123,55 @@ export default function App() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  React.useEffect(() => {
+    if (!user) {
+      setHasAccess(null);
+      return;
+    }
+    checkAccess();
+  }, [user, checkAccess]);
+
+  // Right after returning from Stripe Checkout, the webhook may take a
+  // few seconds to land. Poll briefly instead of showing "access denied"
+  // for a coach who just paid.
+  React.useEffect(() => {
+    if (!justReturnedFromCheckout || !user) return undefined;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      const granted = await checkAccess();
+      if (granted || attempts >= 8) {
+        clearInterval(interval);
+        setJustReturnedFromCheckout(false);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [justReturnedFromCheckout, user, checkAccess]);
+
+  const startCheckout = async () => {
+    setCheckoutError('');
+    setCheckoutLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session && sessionData.session.access_token;
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setCheckoutError(data.error || 'Couldn\u2019t start checkout. Please try again.');
+        setCheckoutLoading(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      setCheckoutError('Couldn\u2019t reach the server. Check your connection and try again.');
+      setCheckoutLoading(false);
+    }
+  };
 
   const colors = { primary: '#1a1a2e', accent: '#ff6b35', light: '#f5f5f5', white: '#ffffff', text: '#2c3e50', lightText: '#7f8c8d' };
 
@@ -256,13 +334,56 @@ export default function App() {
     );
   }
 
-  if (page === 'dashboard' && user) {
+  if (page === 'dashboard' && user && hasAccess === null) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: colors.light }}>
+        <img src={logo} alt="Basketball IQ System" style={{ width: '60px', height: '60px', opacity: 0.6 }} />
+      </div>
+    );
+  }
+
+  if (page === 'dashboard' && user && hasAccess === false) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '440px', textAlign: 'center' }}>
+          <img src={logo} alt="Basketball IQ System" style={{ width: '56px', height: '56px', marginBottom: '16px' }} />
+          {justReturnedFromCheckout ? (
+            <>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Activating your account\u2026</h1>
+              <p style={{ fontSize: '14px', color: colors.lightText }}>Payment received \u2014 this usually takes just a few seconds. This page will update automatically.</p>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Start Your Subscription</h1>
+              <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '25px' }}>$19/month \u2014 full access to practice plans, player development, the play design whiteboard, and the AI play assistant.</p>
+              {checkoutError && (
+                <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px', textAlign: 'left' }}>
+                  <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{checkoutError}</p>
+                </div>
+              )}
+              <button onClick={startCheckout} disabled={checkoutLoading} style={{ width: '100%', padding: '14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: checkoutLoading ? 'not-allowed' : 'pointer', marginBottom: '15px' }}>
+                {checkoutLoading ? 'Redirecting to checkout\u2026' : 'Subscribe \u2014 $19/month'}
+              </button>
+              <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ background: 'none', border: 'none', color: colors.lightText, cursor: 'pointer', fontSize: '13px' }}>Sign out</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === 'dashboard' && user && hasAccess) {
     return (
       <div style={{ backgroundColor: colors.light, minHeight: '100vh', paddingBottom: '40px' }}>
         <div className="app-header" style={{ backgroundColor: colors.white, borderBottom: '2px solid ' + colors.accent, padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '20px', fontWeight: '700', color: colors.primary }}>
             <img src={logo} alt="Basketball IQ System" style={{ width: '32px', height: '32px' }} />
             Basketball IQ
+            {(accessReason === 'admin' || accessReason === 'comped') && (
+              <span style={{ fontSize: '11px', fontWeight: '700', color: colors.accent, backgroundColor: '#fff4e5', padding: '3px 10px', borderRadius: '10px' }}>
+                {accessReason === 'admin' ? 'ADMIN ACCESS' : 'COMPED'}
+              </span>
+            )}
           </span>
           <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
         </div>
