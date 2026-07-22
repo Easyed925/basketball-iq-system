@@ -61,15 +61,25 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  const statusMap = { active: 'active', trialing: 'active', past_due: 'past_due', canceled: 'canceled', unpaid: 'past_due' };
+
+  const fieldsFromSubscription = (subscription) => ({
+    subscription_status: statusMap[subscription.status] || 'inactive',
+    stripe_subscription_id: subscription.id,
+    trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+  });
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const userId = session.metadata && session.metadata.supabase_user_id;
-        if (userId) {
+        if (userId && session.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
           await supabaseAdmin
             .from('profiles')
-            .update({ subscription_status: 'active', stripe_customer_id: session.customer })
+            .update({ ...fieldsFromSubscription(subscription), stripe_customer_id: session.customer })
             .eq('id', userId);
         }
         break;
@@ -78,18 +88,14 @@ module.exports = async function handler(req, res) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const userId = subscription.metadata && subscription.metadata.supabase_user_id;
-        const statusMap = { active: 'active', trialing: 'active', past_due: 'past_due', canceled: 'canceled', unpaid: 'past_due' };
-        const newStatus = statusMap[subscription.status] || 'inactive';
+        const fields = fieldsFromSubscription(subscription);
 
         if (userId) {
-          await supabaseAdmin.from('profiles').update({ subscription_status: newStatus }).eq('id', userId);
+          await supabaseAdmin.from('profiles').update(fields).eq('id', userId);
         } else {
           // Fallback: match by Stripe customer id if metadata wasn't set
           // on this particular event.
-          await supabaseAdmin
-            .from('profiles')
-            .update({ subscription_status: newStatus })
-            .eq('stripe_customer_id', subscription.customer);
+          await supabaseAdmin.from('profiles').update(fields).eq('stripe_customer_id', subscription.customer);
         }
         break;
       }

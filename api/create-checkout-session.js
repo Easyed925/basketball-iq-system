@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=canceled`,
       metadata: { supabase_user_id: user.id },
-      subscription_data: { metadata: { supabase_user_id: user.id } },
+      subscription_data: { trial_period_days: 14, metadata: { supabase_user_id: user.id } },
     });
 
     res.status(200).json({ url: session.url });
