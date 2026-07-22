@@ -80,6 +80,15 @@ export default function App() {
   const [signupError, setSignupError] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
   const [hasAccess, setHasAccess] = useState(null); // null = checking, true/false once known
   const [accessReason, setAccessReason] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -117,8 +126,11 @@ export default function App() {
       setAuthLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session ? session.user : null);
+      if (event === 'PASSWORD_RECOVERY') {
+        setPage('reset-password');
+      }
     });
 
     return () => listener.subscription.unsubscribe();
@@ -258,8 +270,110 @@ export default function App() {
               {loginLoading ? 'Signing in\u2026' : 'Sign In'}
             </button>
           </form>
-          <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('signup')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Create account</button></p>
+          <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '13px' }}><button onClick={() => { setForgotPasswordError(''); setForgotPasswordSent(false); setPage('forgot-password'); }} style={{ background: 'none', border: 'none', color: colors.lightText, cursor: 'pointer' }}>Forgot password?</button></p>
+          <p style={{ textAlign: 'center', marginTop: '5px', fontSize: '14px' }}><button onClick={() => setPage('signup')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Create account</button></p>
           <p style={{ textAlign: 'center', fontSize: '14px' }}><button onClick={() => setPage('landing')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Back</button></p>
+        </div>
+      </div>
+    );
+  }
+
+  if (page === 'forgot-password' && !user) {
+    const handleForgotPassword = async (e) => {
+      e.preventDefault();
+      setForgotPasswordError('');
+      setForgotPasswordLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: window.location.origin,
+      });
+      setForgotPasswordLoading(false);
+      if (error) {
+        setForgotPasswordError(error.message);
+        return;
+      }
+      setForgotPasswordSent(true);
+    };
+
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px', textAlign: forgotPasswordSent ? 'center' : 'left' }}>
+          {forgotPasswordSent ? (
+            <>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Check your email</h1>
+              <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>If an account exists for <strong>{forgotPasswordEmail}</strong>, we sent a link to reset your password. Click it to choose a new one.</p>
+              <button onClick={() => setPage('login')} style={{ padding: '12px 24px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Back to Sign In</button>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textAlign: 'center', marginBottom: '10px' }}>Reset Password</h1>
+              <p style={{ fontSize: '13px', color: colors.lightText, textAlign: 'center', marginBottom: '25px' }}>Enter your email and we\u2019ll send you a link to set a new password.</p>
+              {forgotPasswordError && (
+                <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
+                  <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{forgotPasswordError}</p>
+                </div>
+              )}
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <input type="email" placeholder="Email" value={forgotPasswordEmail} onChange={(e) => setForgotPasswordEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+                <button type="submit" disabled={forgotPasswordLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: forgotPasswordLoading ? 'not-allowed' : 'pointer' }}>
+                  {forgotPasswordLoading ? 'Sending\u2026' : 'Send Reset Link'}
+                </button>
+              </form>
+              <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('login')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Back to Sign In</button></p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === 'reset-password') {
+    const handleResetPassword = async (e) => {
+      e.preventDefault();
+      setResetPasswordError('');
+      if (newPassword.length < 6) {
+        setResetPasswordError('Password must be at least 6 characters.');
+        return;
+      }
+      if (newPassword !== newPasswordConfirm) {
+        setResetPasswordError('Passwords don\u2019t match.');
+        return;
+      }
+      setResetPasswordLoading(true);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      setResetPasswordLoading(false);
+      if (error) {
+        setResetPasswordError(error.message);
+        return;
+      }
+      setResetPasswordSuccess(true);
+    };
+
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <div style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '40px', width: '100%', maxWidth: '400px', textAlign: resetPasswordSuccess ? 'center' : 'left' }}>
+          {resetPasswordSuccess ? (
+            <>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Password updated</h1>
+              <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>You\u2019re all set. Continue to your dashboard.</p>
+              <button onClick={() => setPage('dashboard')} style={{ padding: '12px 24px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Go to Dashboard</button>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textAlign: 'center', marginBottom: '25px' }}>Choose a New Password</h1>
+              {resetPasswordError && (
+                <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
+                  <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{resetPasswordError}</p>
+                </div>
+              )}
+              <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <input type="password" placeholder="New password (min 6 characters)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+                <input type="password" placeholder="Confirm new password" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
+                <button type="submit" disabled={resetPasswordLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: resetPasswordLoading ? 'not-allowed' : 'pointer' }}>
+                  {resetPasswordLoading ? 'Updating\u2026' : 'Update Password'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     );

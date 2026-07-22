@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import CourtSVG from './CourtSVG';
+import WhiteboardTutorial from './WhiteboardTutorial';
 import { COURT_WIDTH, COURT_HEIGHT } from './courtGeometry';
 
 const TWEEN_MS = 900;
@@ -39,6 +40,22 @@ const PlayAnimator = ({ initialPlay }) => {
   const [arrowDraft, setArrowDraft] = useState(null); // { x1, y1 }
   const [pointerPos, setPointerPos] = useState(null);
   const [savedMessage, setSavedMessage] = useState('');
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try {
+      return !localStorage.getItem('biq_whiteboard_tutorial_seen');
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const closeTutorial = () => {
+    setShowTutorial(false);
+    try {
+      localStorage.setItem('biq_whiteboard_tutorial_seen', '1');
+    } catch (e) {
+      // ignore storage errors (e.g. private browsing)
+    }
+  };
 
   const svgRef = useRef(null);
   const draggingRef = useRef(null); // { type: 'player'|'ball', id }
@@ -258,7 +275,16 @@ const PlayAnimator = ({ initialPlay }) => {
 
   return (
     <div className="pa-wrapper" style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px' }}>
-      <h3 style={{ color: '#1a1a2e', marginBottom: '15px', fontWeight: '700' }}>🏀 Play Design Whiteboard</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h3 style={{ color: '#1a1a2e', fontWeight: '700', margin: 0 }}>🏀 Play Design Whiteboard</h3>
+        <button
+          onClick={() => setShowTutorial(true)}
+          style={{ padding: '6px 14px', backgroundColor: '#f5f5f5', color: '#1a1a2e', border: '1px solid #ccc', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+        >
+          ❓ How to Use
+        </button>
+      </div>
+      {showTutorial && <WhiteboardTutorial onClose={closeTutorial} />}
 
       <div className="pa-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
         {toolButton('select', '↖ Move')}
