@@ -138,6 +138,10 @@ export default function App() {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
   const [hasAccess, setHasAccess] = useState(null); // null = checking, true/false once known
+  const [showBilling, setShowBilling] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [billingActionLoading, setBillingActionLoading] = useState(false);
+  const [billingError, setBillingError] = useState('');
   const [accessReason, setAccessReason] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
@@ -166,6 +170,44 @@ export default function App() {
       return false;
     }
   }, []);
+
+  const loadProfile = React.useCallback(async () => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    setProfile(data || null);
+  }, [user]);
+
+  React.useEffect(() => {
+    loadProfile();
+  }, [loadProfile, hasAccess]);
+
+  const manageSubscription = async (action) => {
+    setBillingError('');
+    setBillingActionLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session && sessionData.session.access_token;
+      const res = await fetch('/api/manage-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBillingError(data.error || 'Something went wrong. Please try again.');
+        setBillingActionLoading(false);
+        return;
+      }
+      await loadProfile();
+      setBillingActionLoading(false);
+    } catch (e) {
+      setBillingError('Couldn\u2019t reach the server. Check your connection and try again.');
+      setBillingActionLoading(false);
+    }
+  };
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -516,15 +558,15 @@ export default function App() {
             </>
           ) : (
             <>
-              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Start Your Subscription</h1>
-              <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '25px' }}>$19/month \u2014 full access to practice plans, player development, the play design whiteboard, and the AI play assistant.</p>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Start Your Free Trial</h1>
+              <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '25px' }}>14 days free, full access to everything \u2014 practice plans, player development, the play design whiteboard, and the AI play assistant. A card is required to start, but you won\u2019t be charged until the trial ends, and you can cancel anytime before then.</p>
               {checkoutError && (
                 <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px', textAlign: 'left' }}>
                   <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{checkoutError}</p>
                 </div>
               )}
               <button onClick={startCheckout} disabled={checkoutLoading} style={{ width: '100%', padding: '14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: checkoutLoading ? 'not-allowed' : 'pointer', marginBottom: '15px' }}>
-                {checkoutLoading ? 'Redirecting to checkout\u2026' : 'Subscribe \u2014 $19/month'}
+                {checkoutLoading ? 'Redirecting to checkout\u2026' : 'Start 14-Day Free Trial'}
               </button>
               <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ background: 'none', border: 'none', color: colors.lightText, cursor: 'pointer', fontSize: '13px' }}>Sign out</button>
             </>
@@ -547,8 +589,68 @@ export default function App() {
               </span>
             )}
           </span>
-          <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {accessReason === 'subscribed' && (
+              <button onClick={() => setShowBilling(true)} style={{ padding: '8px 16px', backgroundColor: colors.white, color: colors.primary, border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Billing</button>
+            )}
+            <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ padding: '8px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Logout</button>
+          </div>
         </div>
+
+        {showBilling && profile && (
+          <div
+            onClick={() => setShowBilling(false)}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 26, 46, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: colors.white, borderRadius: '12px', padding: '30px', width: '100%', maxWidth: '420px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, margin: 0 }}>Billing</h2>
+                <button onClick={() => setShowBilling(false)} aria-label="Close" style={{ background: 'none', border: 'none', fontSize: '22px', lineHeight: 1, color: colors.lightText, cursor: 'pointer' }}>×</button>
+              </div>
+
+              {billingError && (
+                <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
+                  <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{billingError}</p>
+                </div>
+              )}
+
+              {(() => {
+                const trialEndDate = profile.trial_end ? new Date(profile.trial_end) : null;
+                const isTrialing = trialEndDate && trialEndDate > new Date();
+                const daysLeft = isTrialing ? Math.max(1, Math.ceil((trialEndDate - new Date()) / (1000 * 60 * 60 * 24))) : 0;
+                const dateStr = trialEndDate ? trialEndDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+                if (profile.cancel_at_period_end) {
+                  return (
+                    <>
+                      <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>
+                        {isTrialing
+                          ? `Your trial ends on ${dateStr}. You won't be charged, and your access ends that day unless you resume.`
+                          : `Your subscription is set to end on ${dateStr} and won't renew. You'll keep access until then.`}
+                      </p>
+                      <button onClick={() => manageSubscription('resume')} disabled={billingActionLoading} style={{ width: '100%', padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '14px', cursor: billingActionLoading ? 'not-allowed' : 'pointer' }}>
+                        {billingActionLoading ? 'Updating\u2026' : 'Resume Subscription'}
+                      </button>
+                    </>
+                  );
+                }
+
+                return (
+                  <>
+                    <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>
+                      {isTrialing
+                        ? `You're on your free trial \u2014 ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. You'll be charged $19/month starting ${dateStr} unless you cancel first.`
+                        : 'You have an active subscription at $19/month.'}
+                    </p>
+                    <button onClick={() => manageSubscription('cancel')} disabled={billingActionLoading} style={{ width: '100%', padding: '12px', backgroundColor: colors.white, color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '6px', fontWeight: '700', fontSize: '14px', cursor: billingActionLoading ? 'not-allowed' : 'pointer' }}>
+                      {billingActionLoading ? 'Updating\u2026' : isTrialing ? 'Cancel Trial' : 'Cancel Subscription'}
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        )}
 
         <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
           <div className="app-hero" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', color: colors.white, padding: '40px', borderRadius: '12px', marginBottom: '40px', textAlign: 'center' }}>
