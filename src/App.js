@@ -322,7 +322,7 @@ export default function App() {
               <li style={{ padding: '10px 0' }}>✓ AI assistant</li>
             </ul>
             <button onClick={() => setPage('signup')} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: colors.accent, color: colors.white }}>Start Free Trial</button>
-            <p style={{ fontSize: '12px', marginTop: '15px', opacity: 0.8 }}>7 days free. No credit card required.</p>
+            <p style={{ fontSize: '12px', marginTop: '15px', opacity: 0.8 }}>14 days free. Card required to start, not charged until the trial ends.</p>
           </div>
         </section>
       </div>
