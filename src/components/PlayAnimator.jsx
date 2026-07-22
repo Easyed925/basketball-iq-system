@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import CourtSVG from './CourtSVG';
 import WhiteboardTutorial from './WhiteboardTutorial';
+import { supabase } from '../services/supabaseClient';
 import { COURT_WIDTH, COURT_HEIGHT } from './courtGeometry';
 
 const TWEEN_MS = 900;
@@ -30,7 +31,7 @@ const makeInitialStep = (roster, positions, ball) => ({
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
-const PlayAnimator = ({ initialPlay }) => {
+const PlayAnimator = ({ initialPlay, onSaved }) => {
   const [roster, setRoster] = useState(() => initialPlay?.roster || makeInitialRoster());
   const [steps, setSteps] = useState(() => initialPlay?.steps || [makeInitialStep(initialPlay?.roster || makeInitialRoster())]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -219,18 +220,32 @@ const PlayAnimator = ({ initialPlay }) => {
     setTween(null);
   };
 
-  const saveToLibrary = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('biq_saved_plays') || '[]');
-      const name = window.prompt('Name this play:', 'My Custom Play');
-      if (!name) return;
-      saved.push({ id: `custom-${Date.now()}`, name, roster, steps, savedAt: new Date().toISOString() });
-      localStorage.setItem('biq_saved_plays', JSON.stringify(saved));
-      setSavedMessage('Saved to your browser\u2019s local storage.');
-      setTimeout(() => setSavedMessage(''), 3000);
-    } catch (e) {
-      setSavedMessage('Could not save — your browser may be blocking local storage.');
+  const saveToLibrary = async () => {
+    const name = window.prompt('Name this play:', 'My Custom Play');
+    if (!name) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData.session && sessionData.session.user;
+    if (!currentUser) {
+      setSavedMessage('Please sign in again \u2014 your session may have expired.');
+      return;
     }
+
+    const { error } = await supabase.from('plays').insert({
+      user_id: currentUser.id,
+      name,
+      roster,
+      steps,
+    });
+
+    if (error) {
+      setSavedMessage('Couldn\u2019t save that play right now. Please try again.');
+      return;
+    }
+
+    setSavedMessage('Saved \u2014 find it under My Saved Plays.');
+    setTimeout(() => setSavedMessage(''), 3000);
+    if (onSaved) onSaved();
   };
 
   const step = steps[currentStep] || steps[0];

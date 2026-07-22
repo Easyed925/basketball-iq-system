@@ -68,6 +68,54 @@ export default function App() {
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [libraryPlay, setLibraryPlay] = useState(null);
   const [libraryLoadKey, setLibraryLoadKey] = useState(0);
+  const [savedPlays, setSavedPlays] = useState([]);
+
+  const loadSavedPlays = React.useCallback(async () => {
+    if (!user) {
+      setSavedPlays([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('plays')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) setSavedPlays(data);
+  }, [user]);
+
+  React.useEffect(() => {
+    loadSavedPlays();
+  }, [loadSavedPlays]);
+
+  // One-time migration: anyone who saved plays before this feature moved
+  // to a real database gets those old browser-only plays copied in
+  // automatically, then the old local copy is cleared.
+  React.useEffect(() => {
+    if (!user) return;
+    const migrate = async () => {
+      let oldPlays = [];
+      try {
+        oldPlays = JSON.parse(localStorage.getItem('biq_saved_plays') || '[]');
+      } catch (e) {
+        return;
+      }
+      if (!oldPlays.length) return;
+
+      const rows = oldPlays.map((p) => ({ user_id: user.id, name: p.name, roster: p.roster, steps: p.steps }));
+      const { error } = await supabase.from('plays').insert(rows);
+      if (!error) {
+        localStorage.removeItem('biq_saved_plays');
+        loadSavedPlays();
+      }
+    };
+    migrate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const deleteSavedPlay = async (id) => {
+    if (!window.confirm('Delete this saved play? This can\u2019t be undone.')) return;
+    const { error } = await supabase.from('plays').delete().eq('id', id);
+    if (!error) setSavedPlays((prev) => prev.filter((p) => p.id !== id));
+  };
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -519,7 +567,36 @@ export default function App() {
 
           {dashTab === 'whiteboard' && (
             <div>
-              <PlayAnimator key={libraryLoadKey} initialPlay={libraryPlay} />
+              <PlayAnimator key={libraryLoadKey} initialPlay={libraryPlay} onSaved={loadSavedPlays} />
+
+              {savedPlays.length > 0 && (
+                <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>💾 My Saved Plays</h2>
+                  <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>Saved to your account \u2014 available on any device you sign in on.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px' }}>
+                    {savedPlays.map(play => (
+                      <div key={play.id} style={{ backgroundColor: colors.light, padding: '18px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{play.name}</h3>
+                        <p style={{ fontSize: '12px', color: colors.lightText, marginBottom: '10px' }}>Saved {new Date(play.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => { setLibraryPlay(play); setLibraryLoadKey(k => k + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                            style={{ padding: '8px 14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                          >
+                            Load →
+                          </button>
+                          <button
+                            onClick={() => deleteSavedPlay(play.id)}
+                            style={{ padding: '8px 14px', backgroundColor: colors.white, color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>📚 Load a Play</h2>
