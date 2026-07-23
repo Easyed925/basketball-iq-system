@@ -112,7 +112,7 @@ export default function App() {
   }, [user]);
 
   const deleteSavedPlay = async (id) => {
-    if (!window.confirm('Delete this saved play? This can\u2019t be undone.')) return;
+    if (!window.confirm("Delete this saved play? This can't be undone.")) return;
     const { error } = await supabase.from('plays').delete().eq('id', id);
     if (!error) setSavedPlays((prev) => prev.filter((p) => p.id !== id));
   };
@@ -204,7 +204,7 @@ export default function App() {
       await loadProfile();
       setBillingActionLoading(false);
     } catch (e) {
-      setBillingError('Couldn\u2019t reach the server. Check your connection and try again.');
+      setBillingError("Couldn't reach the server. Check your connection and try again.");
       setBillingActionLoading(false);
     }
   };
@@ -264,13 +264,13 @@ export default function App() {
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        setCheckoutError(data.error || 'Couldn\u2019t start checkout. Please try again.');
+        setCheckoutError(data.error || "Couldn't start checkout. Please try again.");
         setCheckoutLoading(false);
         return;
       }
       window.location.href = data.url;
     } catch (e) {
-      setCheckoutError('Couldn\u2019t reach the server. Check your connection and try again.');
+      setCheckoutError("Couldn't reach the server. Check your connection and try again.");
       setCheckoutLoading(false);
     }
   };
@@ -357,7 +357,7 @@ export default function App() {
             <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
             <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
             <button type="submit" disabled={loginLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: loginLoading ? 'not-allowed' : 'pointer' }}>
-              {loginLoading ? 'Signing in\u2026' : 'Sign In'}
+              {loginLoading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '13px' }}><button onClick={() => { setForgotPasswordError(''); setForgotPasswordSent(false); setPage('forgot-password'); }} style={{ background: 'none', border: 'none', color: colors.lightText, cursor: 'pointer' }}>Forgot password?</button></p>
@@ -396,7 +396,7 @@ export default function App() {
           ) : (
             <>
               <h1 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textAlign: 'center', marginBottom: '10px' }}>Reset Password</h1>
-              <p style={{ fontSize: '13px', color: colors.lightText, textAlign: 'center', marginBottom: '25px' }}>Enter your email and we\u2019ll send you a link to set a new password.</p>
+              <p style={{ fontSize: '13px', color: colors.lightText, textAlign: 'center', marginBottom: '25px' }}>Enter your email and we'll send you a link to set a new password.</p>
               {forgotPasswordError && (
                 <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px' }}>
                   <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{forgotPasswordError}</p>
@@ -405,7 +405,7 @@ export default function App() {
               <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <input type="email" placeholder="Email" value={forgotPasswordEmail} onChange={(e) => setForgotPasswordEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
                 <button type="submit" disabled={forgotPasswordLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: forgotPasswordLoading ? 'not-allowed' : 'pointer' }}>
-                  {forgotPasswordLoading ? 'Sending\u2026' : 'Send Reset Link'}
+                  {forgotPasswordLoading ? 'Sending…' : 'Send Reset Link'}
                 </button>
               </form>
               <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('login')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Back to Sign In</button></p>
@@ -425,7 +425,7 @@ export default function App() {
         return;
       }
       if (newPassword !== newPasswordConfirm) {
-        setResetPasswordError('Passwords don\u2019t match.');
+        setResetPasswordError("Passwords don't match.");
         return;
       }
       setResetPasswordLoading(true);
@@ -444,7 +444,7 @@ export default function App() {
           {resetPasswordSuccess ? (
             <>
               <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Password updated</h1>
-              <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>You\u2019re all set. Continue to your dashboard.</p>
+              <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>You're all set. Continue to your dashboard.</p>
               <button onClick={() => setPage('dashboard')} style={{ padding: '12px 24px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Go to Dashboard</button>
             </>
           ) : (
@@ -459,7 +459,7 @@ export default function App() {
                 <input type="password" placeholder="New password (min 6 characters)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
                 <input type="password" placeholder="Confirm new password" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
                 <button type="submit" disabled={resetPasswordLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: resetPasswordLoading ? 'not-allowed' : 'pointer' }}>
-                  {resetPasswordLoading ? 'Updating\u2026' : 'Update Password'}
+                  {resetPasswordLoading ? 'Updating…' : 'Update Password'}
                 </button>
               </form>
             </>
@@ -528,7 +528,7 @@ export default function App() {
             </select>
             <input type="password" placeholder="Password (min 6 characters)" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} minLength={6} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' }} required />
             <button type="submit" disabled={signupLoading} style={{ padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: signupLoading ? 'not-allowed' : 'pointer' }}>
-              {signupLoading ? 'Creating account\u2026' : 'Create Account'}
+              {signupLoading ? 'Creating account…' : 'Create Account'}
             </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}><button onClick={() => setPage('login')} style={{ background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontWeight: '600' }}>Already have account?</button></p>
@@ -553,20 +553,20 @@ export default function App() {
           <img src={logo} alt="Basketball IQ System" style={{ width: '56px', height: '56px', marginBottom: '16px' }} />
           {justReturnedFromCheckout ? (
             <>
-              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Activating your account\u2026</h1>
-              <p style={{ fontSize: '14px', color: colors.lightText }}>Payment received \u2014 this usually takes just a few seconds. This page will update automatically.</p>
+              <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '12px' }}>Activating your account…</h1>
+              <p style={{ fontSize: '14px', color: colors.lightText }}>Payment received — this usually takes just a few seconds. This page will update automatically.</p>
             </>
           ) : (
             <>
               <h1 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Start Your Free Trial</h1>
-              <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '25px' }}>14 days free, full access to everything \u2014 practice plans, player development, the play design whiteboard, and the AI play assistant. A card is required to start, but you won\u2019t be charged until the trial ends, and you can cancel anytime before then.</p>
+              <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '25px' }}>14 days free, full access to everything — practice plans, player development, the play design whiteboard, and the AI play assistant. A card is required to start, but you won't be charged until the trial ends, and you can cancel anytime before then.</p>
               {checkoutError && (
                 <div style={{ backgroundColor: '#fdecea', border: '1px solid #e74c3c', borderRadius: '8px', padding: '10px 14px', marginBottom: '15px', textAlign: 'left' }}>
                   <p style={{ fontSize: '13px', color: '#c0392b', margin: 0 }}>{checkoutError}</p>
                 </div>
               )}
               <button onClick={startCheckout} disabled={checkoutLoading} style={{ width: '100%', padding: '14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: checkoutLoading ? 'not-allowed' : 'pointer', marginBottom: '15px' }}>
-                {checkoutLoading ? 'Redirecting to checkout\u2026' : 'Start 14-Day Free Trial'}
+                {checkoutLoading ? 'Redirecting to checkout…' : 'Start 14-Day Free Trial'}
               </button>
               <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setPage('landing'); }} style={{ background: 'none', border: 'none', color: colors.lightText, cursor: 'pointer', fontSize: '13px' }}>Sign out</button>
             </>
@@ -629,7 +629,7 @@ export default function App() {
                           : `Your subscription is set to end on ${dateStr} and won't renew. You'll keep access until then.`}
                       </p>
                       <button onClick={() => manageSubscription('resume')} disabled={billingActionLoading} style={{ width: '100%', padding: '12px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '14px', cursor: billingActionLoading ? 'not-allowed' : 'pointer' }}>
-                        {billingActionLoading ? 'Updating\u2026' : 'Resume Subscription'}
+                        {billingActionLoading ? 'Updating…' : 'Resume Subscription'}
                       </button>
                     </>
                   );
@@ -639,11 +639,11 @@ export default function App() {
                   <>
                     <p style={{ fontSize: '14px', color: colors.text, marginBottom: '20px' }}>
                       {isTrialing
-                        ? `You're on your free trial \u2014 ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. You'll be charged $19/month starting ${dateStr} unless you cancel first.`
+                        ? `You're on your free trial — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. You'll be charged $19/month starting ${dateStr} unless you cancel first.`
                         : 'You have an active subscription at $19/month.'}
                     </p>
                     <button onClick={() => manageSubscription('cancel')} disabled={billingActionLoading} style={{ width: '100%', padding: '12px', backgroundColor: colors.white, color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '6px', fontWeight: '700', fontSize: '14px', cursor: billingActionLoading ? 'not-allowed' : 'pointer' }}>
-                      {billingActionLoading ? 'Updating\u2026' : isTrialing ? 'Cancel Trial' : 'Cancel Subscription'}
+                      {billingActionLoading ? 'Updating…' : isTrialing ? 'Cancel Trial' : 'Cancel Subscription'}
                     </button>
                   </>
                 );
@@ -674,7 +674,7 @@ export default function App() {
               {savedPlays.length > 0 && (
                 <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
                   <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>💾 My Saved Plays</h2>
-                  <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>Saved to your account \u2014 available on any device you sign in on.</p>
+                  <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>Saved to your account — available on any device you sign in on.</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px' }}>
                     {savedPlays.map(play => (
                       <div key={play.id} style={{ backgroundColor: colors.light, padding: '18px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
