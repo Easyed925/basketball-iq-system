@@ -3,7 +3,7 @@ import React from 'react';
 const STEPS = [
   {
     title: '1. Set up your players',
-    body: 'Tap "+ Offense" or "+ Defense" then tap anywhere on the court to drop a player there. Black tokens are offense, red-outlined tokens are defense. Switch to "\u2196 Move" and drag any token (or the ball) to reposition it.',
+    body: 'Tap "+ Offense" or "+ Defense" then tap anywhere on the court to drop a player there. Black tokens are offense, red-outlined tokens are defense. Switch to "↖ Move" and drag any token (or the ball) to reposition it.',
   },
   {
     title: '2. Draw the movement',
@@ -11,15 +11,15 @@ const STEPS = [
   },
   {
     title: '3. Build the sequence step by step',
-    body: 'Each "step" is a snapshot of where everyone is. Once step 1 looks right, tap "+ Add Step" \u2014 this copies the current positions into a new step. Move players and draw new arrows to show what happens next, and repeat for as many steps as the play needs.',
+    body: 'Each "step" is a snapshot of where everyone is. Once step 1 looks right, tap "+ Add Step" — this copies the current positions into a new step. Move players and draw new arrows to show what happens next, and repeat for as many steps as the play needs.',
   },
   {
     title: '4. Play it back',
-    body: 'Hit "\u25b6 Play Sequence" to animate through every step you built, like a telestrator. Use "\u2039" and "\u203a" to step through manually, or "\u27f2 Reset" to jump back to the start.',
+    body: 'Hit "▶ Play Sequence" to animate through every step you built, like a telestrator. Use "‹" and "›" to step through manually, or "⟲ Reset" to jump back to the start.',
   },
   {
     title: '5. Save or load a play',
-    body: '"\ud83d\udcbe Save Play" stores your play in this browser so you can find it again later. You can also load a ready-made play from the library below the whiteboard, or describe a play in plain language to the AI assistant and it\u2019ll build the whole sequence for you.',
+    body: '"💾 Save Play" stores your play in this browser so you can find it again later. You can also load a ready-made play from the library below the whiteboard, or describe a play in plain language to the AI assistant and it\'ll build the whole sequence for you.',
   },
 ];
 
@@ -69,7 +69,7 @@ const WhiteboardTutorial = ({ onClose }) => {
           onClick={onClose}
           style={{ marginTop: '25px', width: '100%', padding: '12px', backgroundColor: '#ff6b35', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
         >
-          Got it, let\u2019s go
+          Got it, let's go
         </button>
       </div>
     </div>
