@@ -227,7 +227,7 @@ const PlayAnimator = ({ initialPlay, onSaved }) => {
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData.session && sessionData.session.user;
     if (!currentUser) {
-      setSavedMessage('Please sign in again \u2014 your session may have expired.');
+      setSavedMessage('Please sign in again — your session may have expired.');
       return;
     }
 
@@ -239,11 +239,11 @@ const PlayAnimator = ({ initialPlay, onSaved }) => {
     });
 
     if (error) {
-      setSavedMessage('Couldn\u2019t save that play right now. Please try again.');
+      setSavedMessage('Couldn’t save that play right now. Please try again.');
       return;
     }
 
-    setSavedMessage('Saved \u2014 find it under My Saved Plays.');
+    setSavedMessage('Saved — find it under My Saved Plays.');
     setTimeout(() => setSavedMessage(''), 3000);
     if (onSaved) onSaved();
   };
