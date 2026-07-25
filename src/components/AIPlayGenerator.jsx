@@ -25,7 +25,7 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session && sessionData.session.access_token;
       if (!token) {
-        setError('Please sign in again \u2014 your session may have expired.');
+        setError("Please sign in again — your session may have expired.");
         return;
       }
 
@@ -42,7 +42,7 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
       onPlayGenerated(data);
       setLastLoaded(data.name || 'Your play');
     } catch (e) {
-      setError('Couldn\u2019t reach the server. Check your connection and try again.');
+      setError("Couldn't reach the server. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
     <div style={{ padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '12px' }}>
       <h3 style={{ color: '#1a1a2e', marginBottom: '6px', fontWeight: '700' }}>🤖 AI Play Design Assistant</h3>
       <p style={{ fontSize: '13px', color: '#7f8c8d', marginBottom: '15px' }}>
-        Describe what you need in plain language \u2014 Claude designs the play and loads it straight onto the whiteboard above.
+        Describe what you need in plain language — Claude designs the play and loads it straight onto the whiteboard above.
       </p>
 
       <div style={{ marginBottom: '15px' }}>
@@ -87,7 +87,7 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
             fontSize: '14px',
           }}
         >
-          {loading ? 'Designing your play\u2026' : '\u2728 Generate Play'}
+          {loading ? 'Designing your play…' : '✨ Generate Play'}
         </button>
       </div>
 
@@ -121,7 +121,7 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
       {lastLoaded && !error && (
         <div style={{ backgroundColor: '#eafaf1', border: '1px solid #27ae60', borderRadius: '8px', padding: '12px 16px' }}>
           <p style={{ fontSize: '13px', color: '#1e8449', margin: 0, fontWeight: '600' }}>
-            \u2713 "{lastLoaded}" loaded onto the whiteboard above \u2191
+            ✓ "{lastLoaded}" loaded onto the whiteboard above ↑
           </p>
         </div>
       )}
