@@ -78,6 +78,6 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({ url: session.url });
   } catch (e) {
-    res.status(500).json({ error: 'Couldn\u2019t start checkout right now. Please try again.' });
+    res.status(500).json({ error: 'Couldn’t start checkout right now. Please try again.' });
   }
 };
