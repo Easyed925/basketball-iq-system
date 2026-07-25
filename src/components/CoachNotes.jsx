@@ -36,6 +36,7 @@ const CoachNotes = () => {
   const [voiceSupported, setVoiceSupported] = useState(true);
 
   const recognitionRef = useRef(null);
+  const lastFinalRef = useRef('');
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -59,8 +60,10 @@ const CoachNotes = () => {
           interim += transcript;
         }
       }
-      if (finalChunk) {
-        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + finalChunk.trim() }));
+      const trimmedFinal = finalChunk.trim();
+      if (trimmedFinal && trimmedFinal !== lastFinalRef.current) {
+        lastFinalRef.current = trimmedFinal;
+        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + trimmedFinal }));
       }
       setInterimText(interim);
     };
@@ -89,6 +92,7 @@ const CoachNotes = () => {
       setIsRecording(false);
     } else {
       try {
+        lastFinalRef.current = '';
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
