@@ -36,8 +36,7 @@ const CoachNotes = () => {
   const [voiceSupported, setVoiceSupported] = useState(true);
 
   const recognitionRef = useRef(null);
-  const sessionFinalRef = useRef('');
-  const lastDeltaRef = useRef('');
+  const shouldRecordRef = useRef(false);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -46,57 +45,53 @@ const CoachNotes = () => {
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      let totalFinal = '';
+      let finalText = '';
       let interim = '';
       for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          totalFinal += transcript + ' ';
+          finalText += transcript + ' ';
         } else {
           interim += transcript;
         }
       }
-      totalFinal = totalFinal.trim();
-      const committed = sessionFinalRef.current;
-      if (totalFinal && totalFinal.toLowerCase() !== committed.toLowerCase()) {
-        const committedLower = committed.toLowerCase();
-        const totalLower = totalFinal.toLowerCase();
-        let sharedLen = 0;
-        while (
-          sharedLen < committedLower.length &&
-          sharedLen < totalLower.length &&
-          committedLower[sharedLen] === totalLower[sharedLen]
-        ) {
-          sharedLen++;
-        }
-        const delta = totalFinal.slice(sharedLen).trim();
-        if (delta && delta.toLowerCase() !== lastDeltaRef.current.toLowerCase()) {
-          lastDeltaRef.current = delta;
-          setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + delta }));
-        }
-        sessionFinalRef.current = totalFinal;
+      finalText = finalText.trim();
+      if (finalText) {
+        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + finalText }));
       }
       setInterimText(interim);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
+      // 'no-speech' fires often between phrases in non-continuous mode; not a real error
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      shouldRecordRef.current = false;
       setIsRecording(false);
       setInterimText('');
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
       setInterimText('');
+      if (shouldRecordRef.current) {
+        try {
+          recognition.start();
+        } catch (e) {
+          // already starting; ignore
+        }
+      } else {
+        setIsRecording(false);
+      }
     };
 
     recognitionRef.current = recognition;
 
     return () => {
+      shouldRecordRef.current = false;
       recognition.stop();
     };
   }, []);
@@ -104,12 +99,12 @@ const CoachNotes = () => {
   const toggleRecording = useCallback(() => {
     if (!recognitionRef.current) return;
     if (isRecording) {
+      shouldRecordRef.current = false;
       recognitionRef.current.stop();
       setIsRecording(false);
     } else {
       try {
-        sessionFinalRef.current = '';
-        lastDeltaRef.current = '';
+        shouldRecordRef.current = true;
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
