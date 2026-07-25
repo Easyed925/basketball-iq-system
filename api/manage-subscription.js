@@ -77,6 +77,6 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({ cancel_at_period_end: Boolean(subscription.cancel_at_period_end) });
   } catch (e) {
-    res.status(500).json({ error: 'Couldn\u2019t update your subscription right now. Please try again.' });
+    res.status(500).json({ error: 'Couldn’t update your subscription right now. Please try again.' });
   }
 };
