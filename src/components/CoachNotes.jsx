@@ -37,6 +37,7 @@ const CoachNotes = () => {
 
   const recognitionRef = useRef(null);
   const shouldRecordRef = useRef(false);
+  const pendingFinalRef = useRef(null); // { index, text } — a final result not yet confirmed settled
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -49,20 +50,31 @@ const CoachNotes = () => {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
+    const commitPending = () => {
+      if (pendingFinalRef.current && pendingFinalRef.current.text) {
+        const text = pendingFinalRef.current.text;
+        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + text }));
+      }
+      pendingFinalRef.current = null;
+    };
+
     recognition.onresult = (event) => {
-      let finalText = '';
       let interim = '';
-      for (let i = 0; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalText += transcript + ' ';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript.trim();
+        if (result.isFinal) {
+          if (pendingFinalRef.current && pendingFinalRef.current.index === i) {
+            // Same segment being revised again — update, don't commit yet
+            pendingFinalRef.current.text = transcript;
+          } else {
+            // A different segment finalized — the previous pending one is now settled
+            commitPending();
+            pendingFinalRef.current = { index: i, text: transcript };
+          }
         } else {
           interim += transcript;
         }
-      }
-      finalText = finalText.trim();
-      if (finalText) {
-        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + finalText }));
       }
       setInterimText(interim);
     };
@@ -70,12 +82,14 @@ const CoachNotes = () => {
     recognition.onerror = (event) => {
       // 'no-speech' fires often between phrases in non-continuous mode; not a real error
       if (event.error === 'no-speech' || event.error === 'aborted') return;
+      commitPending();
       shouldRecordRef.current = false;
       setIsRecording(false);
       setInterimText('');
     };
 
     recognition.onend = () => {
+      commitPending();
       setInterimText('');
       if (shouldRecordRef.current) {
         try {
@@ -104,6 +118,7 @@ const CoachNotes = () => {
       setIsRecording(false);
     } else {
       try {
+        pendingFinalRef.current = null;
         shouldRecordRef.current = true;
         recognitionRef.current.start();
         setIsRecording(true);
