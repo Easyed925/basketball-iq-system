@@ -22,7 +22,7 @@ const emptyDraft = () => ({ id: null, title: '', category: 'practice', content: 
 
 const formatDate = (iso) => {
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u00b7 ' +
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 };
 
@@ -99,7 +99,7 @@ const CoachNotes = () => {
 
   const saveNote = () => {
     if (!draft.content.trim()) return;
-    const title = draft.title.trim() || draft.content.trim().slice(0, 40) + (draft.content.trim().length > 40 ? '\u2026' : '');
+    const title = draft.title.trim() || draft.content.trim().slice(0, 40) + (draft.content.trim().length > 40 ? '…' : '');
     const now = new Date().toISOString();
 
     setNotes((prev) => {
@@ -130,7 +130,7 @@ const CoachNotes = () => {
   };
 
   const deleteNote = (id) => {
-    if (!window.confirm('Delete this note? This can\u2019t be undone.')) return;
+    if (!window.confirm('Delete this note? This can’t be undone.')) return;
     setNotes((prev) => {
       const next = prev.filter((n) => n.id !== id);
       try {
@@ -157,13 +157,13 @@ const CoachNotes = () => {
     <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
       <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>🎙️ Coach Notes</h2>
       <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>
-        Dictate or type notes for practice outlines, game day prep, and scouting \u2014 saved right on this device.
+        Dictate or type notes for practice outlines, game day prep, and scouting — saved right on this device.
       </p>
 
       {!voiceSupported && (
         <div style={{ backgroundColor: '#fff4e5', border: '1px solid ' + colors.accent, borderRadius: '8px', padding: '12px 16px', marginBottom: '20px' }}>
           <p style={{ fontSize: '13px', color: colors.text, margin: 0 }}>
-            Voice typing isn\u2019t supported in this browser. It works best in Chrome or Edge on desktop and Android. You can still type notes normally below.
+            Voice typing isn’t supported in this browser. It works best in Chrome or Edge on desktop and Android. You can still type notes normally below.
           </p>
         </div>
       )}
@@ -201,7 +201,7 @@ const CoachNotes = () => {
         </div>
 
         <textarea
-          placeholder="Start typing, or tap the mic to dictate\u2026"
+          placeholder="Start typing, or tap the mic to dictate…"
           value={draft.content + (interimText ? (draft.content ? ' ' : '') + interimText : '')}
           onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
           rows={6}
@@ -224,10 +224,10 @@ const CoachNotes = () => {
                 fontSize: '13px',
               }}
             >
-              {isRecording ? '\u23f9 Stop Recording' : '\ud83c\udfa4 Start Recording'}
+              {isRecording ? '⏹ Stop Recording' : '🎤 Start Recording'}
             </button>
           )}
-          {isRecording && <span style={{ fontSize: '12px', color: '#e74c3c', fontWeight: '600' }}>\u25cf Listening\u2026</span>}
+          {isRecording && <span style={{ fontSize: '12px', color: '#e74c3c', fontWeight: '600' }}>● Listening…</span>}
           <button onClick={saveNote} disabled={!draft.content.trim()} className="pa-btn" style={{ padding: '10px 18px', backgroundColor: draft.content.trim() ? colors.accent : '#cccccc', color: colors.white, border: 'none', borderRadius: '6px', cursor: draft.content.trim() ? 'pointer' : 'not-allowed', fontWeight: '700', fontSize: '13px' }}>
             {isEditing ? 'Save Changes' : '+ Save Note'}
           </button>
@@ -266,7 +266,7 @@ const CoachNotes = () => {
       {/* Notes list */}
       {visibleNotes.length === 0 ? (
         <p style={{ fontSize: '14px', color: colors.lightText, textAlign: 'center', padding: '30px 0' }}>
-          No notes yet {filter !== 'all' ? `in ${categoryMeta(filter).label}` : ''} \u2014 dictate or type your first one above.
+          No notes yet {filter !== 'all' ? `in ${categoryMeta(filter).label}` : ''} — dictate or type your first one above.
         </p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px' }}>
@@ -282,7 +282,7 @@ const CoachNotes = () => {
                 </div>
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, margin: '4px 0 6px' }}>{note.title}</h3>
                 <p style={{ fontSize: '13px', color: colors.text, lineHeight: '1.5', flexGrow: 1, whiteSpace: 'pre-wrap' }}>
-                  {note.content.length > 220 ? note.content.slice(0, 220) + '\u2026' : note.content}
+                  {note.content.length > 220 ? note.content.slice(0, 220) + '…' : note.content}
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <button onClick={() => editNote(note)} className="pa-btn" style={{ padding: '6px 12px', backgroundColor: colors.white, color: colors.primary, border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '12px' }}>Edit</button>
@@ -295,7 +295,7 @@ const CoachNotes = () => {
       )}
 
       <p style={{ fontSize: '11px', color: colors.lightText, marginTop: '20px' }}>
-        Notes are saved in this browser only, on this device \u2014 they won\u2019t sync across devices yet.
+        Notes are saved in this browser only, on this device — they won’t sync across devices yet.
       </p>
     </div>
   );
