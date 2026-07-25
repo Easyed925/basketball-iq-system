@@ -63,10 +63,18 @@ const CoachNotes = () => {
       }
       totalFinal = totalFinal.trim();
       const committed = sessionFinalRef.current;
-      if (totalFinal && totalFinal !== committed) {
-        const delta = totalFinal.startsWith(committed)
-          ? totalFinal.slice(committed.length).trim()
-          : totalFinal;
+      if (totalFinal && totalFinal.toLowerCase() !== committed.toLowerCase()) {
+        const committedLower = committed.toLowerCase();
+        const totalLower = totalFinal.toLowerCase();
+        let sharedLen = 0;
+        while (
+          sharedLen < committedLower.length &&
+          sharedLen < totalLower.length &&
+          committedLower[sharedLen] === totalLower[sharedLen]
+        ) {
+          sharedLen++;
+        }
+        const delta = totalFinal.slice(sharedLen).trim();
         if (delta && delta.toLowerCase() !== lastDeltaRef.current.toLowerCase()) {
           lastDeltaRef.current = delta;
           setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + delta }));
