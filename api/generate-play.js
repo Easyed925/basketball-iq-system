@@ -141,11 +141,11 @@ module.exports = async function handler(req, res) {
   try {
     limited = await checkAndRecordUsage(supabaseAdmin, userId, prompt);
   } catch (e) {
-    res.status(500).json({ error: 'Couldn\u2019t check your usage limit right now. Please try again.' });
+    res.status(500).json({ error: 'Couldn’t check your usage limit right now. Please try again.' });
     return;
   }
   if (limited === 'user') {
-    res.status(429).json({ error: 'You\u2019ve hit your hourly limit for AI-generated plays. Try again in a bit, or design the play manually on the whiteboard.' });
+    res.status(429).json({ error: 'You’ve hit your hourly limit for AI-generated plays. Try again in a bit, or design the play manually on the whiteboard.' });
     return;
   }
   if (limited === 'global') {
@@ -190,14 +190,14 @@ module.exports = async function handler(req, res) {
       play = extractJson(textBlock.text);
     } catch (e) {
       res.status(502).json({
-        error: `Claude\u2019s response wasn\u2019t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
+        error: `Claude’s response wasn’t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
       });
       return;
     }
 
     if (!isValidPlay(play)) {
       res.status(502).json({
-        error: `Claude\u2019s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
+        error: `Claude’s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
       });
       return;
     }
