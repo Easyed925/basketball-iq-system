@@ -37,6 +37,7 @@ const CoachNotes = () => {
 
   const recognitionRef = useRef(null);
   const sessionFinalRef = useRef('');
+  const lastDeltaRef = useRef('');
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -66,7 +67,8 @@ const CoachNotes = () => {
         const delta = totalFinal.startsWith(committed)
           ? totalFinal.slice(committed.length).trim()
           : totalFinal;
-        if (delta) {
+        if (delta && delta.toLowerCase() !== lastDeltaRef.current.toLowerCase()) {
+          lastDeltaRef.current = delta;
           setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + delta }));
         }
         sessionFinalRef.current = totalFinal;
@@ -99,6 +101,7 @@ const CoachNotes = () => {
     } else {
       try {
         sessionFinalRef.current = '';
+        lastDeltaRef.current = '';
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
