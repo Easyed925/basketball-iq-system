@@ -61,7 +61,7 @@ module.exports = async function handler(req, res) {
     .maybeSingle();
 
   if (profileError) {
-    res.status(500).json({ error: 'Couldn\u2019t check your account status right now.' });
+    res.status(500).json({ error: 'Couldn’t check your account status right now.' });
     return;
   }
 
