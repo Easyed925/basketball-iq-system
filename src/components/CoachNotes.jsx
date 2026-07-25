@@ -36,7 +36,7 @@ const CoachNotes = () => {
   const [voiceSupported, setVoiceSupported] = useState(true);
 
   const recognitionRef = useRef(null);
-  const lastFinalRef = useRef('');
+  const sessionFinalRef = useRef('');
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -50,20 +50,26 @@ const CoachNotes = () => {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      let finalChunk = '';
+      let totalFinal = '';
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalChunk += transcript + ' ';
+          totalFinal += transcript + ' ';
         } else {
           interim += transcript;
         }
       }
-      const trimmedFinal = finalChunk.trim();
-      if (trimmedFinal && trimmedFinal !== lastFinalRef.current) {
-        lastFinalRef.current = trimmedFinal;
-        setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + trimmedFinal }));
+      totalFinal = totalFinal.trim();
+      const committed = sessionFinalRef.current;
+      if (totalFinal && totalFinal !== committed) {
+        const delta = totalFinal.startsWith(committed)
+          ? totalFinal.slice(committed.length).trim()
+          : totalFinal;
+        if (delta) {
+          setDraft((d) => ({ ...d, content: (d.content ? d.content.trim() + ' ' : '') + delta }));
+        }
+        sessionFinalRef.current = totalFinal;
       }
       setInterimText(interim);
     };
@@ -92,7 +98,7 @@ const CoachNotes = () => {
       setIsRecording(false);
     } else {
       try {
-        lastFinalRef.current = '';
+        sessionFinalRef.current = '';
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
