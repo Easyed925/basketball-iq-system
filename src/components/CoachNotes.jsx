@@ -38,6 +38,7 @@ const CoachNotes = () => {
   const recognitionRef = useRef(null);
   const shouldRecordRef = useRef(false);
   const pendingFinalRef = useRef(null); // { index, text } — a final result not yet confirmed settled
+  const restartTimeoutRef = useRef(null); // pending auto-restart, so Stop can cancel it
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -92,11 +93,17 @@ const CoachNotes = () => {
       commitPending();
       setInterimText('');
       if (shouldRecordRef.current) {
-        try {
-          recognition.start();
-        } catch (e) {
-          // already starting; ignore
-        }
+        // Small delay avoids a tight synchronous restart loop that can
+        // outrun the Stop button on some devices (notably tablets).
+        restartTimeoutRef.current = setTimeout(() => {
+          restartTimeoutRef.current = null;
+          if (!shouldRecordRef.current) return;
+          try {
+            recognition.start();
+          } catch (e) {
+            // already starting; ignore
+          }
+        }, 250);
       } else {
         setIsRecording(false);
       }
@@ -106,16 +113,36 @@ const CoachNotes = () => {
 
     return () => {
       shouldRecordRef.current = false;
-      recognition.stop();
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
+      try {
+        recognition.stop();
+      } catch (e) {
+        // ignore
+      }
     };
   }, []);
 
   const toggleRecording = useCallback(() => {
     if (!recognitionRef.current) return;
     if (isRecording) {
+      // Stop always wins: cancel any queued restart first, then tell the
+      // engine to stop, but don't let a failed/throwing stop() leave the
+      // UI or the recording loop stuck.
       shouldRecordRef.current = false;
-      recognitionRef.current.stop();
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // ignore — may already be stopped
+      }
       setIsRecording(false);
+      setInterimText('');
     } else {
       try {
         pendingFinalRef.current = null;
