@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
+import AIPracticePlanGenerator from './components/AIPracticePlanGenerator';
 import CoachNotes from './components/CoachNotes';
 import { playLibrary, animatedPlays } from './data/playLibrary';
 import { supabase } from './services/supabaseClient';
@@ -115,6 +116,59 @@ export default function App() {
     if (!window.confirm("Delete this saved play? This can't be undone.")) return;
     const { error } = await supabase.from('plays').delete().eq('id', id);
     if (!error) setSavedPlays((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const [savedPracticePlans, setSavedPracticePlans] = useState([]);
+  const [planSaveMessage, setPlanSaveMessage] = useState('');
+
+  const loadSavedPracticePlans = React.useCallback(async () => {
+    if (!user) {
+      setSavedPracticePlans([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('custom_practice_plans')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) setSavedPracticePlans(data);
+  }, [user]);
+
+  React.useEffect(() => {
+    loadSavedPracticePlans();
+  }, [loadSavedPracticePlans]);
+
+  const deleteSavedPracticePlan = async (id) => {
+    if (!window.confirm("Delete this saved practice plan? This can't be undone.")) return;
+    const { error } = await supabase.from('custom_practice_plans').delete().eq('id', id);
+    if (!error) setSavedPracticePlans((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const savePracticePlan = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData.session && sessionData.session.user;
+    if (!currentUser) {
+      setPlanSaveMessage('Please sign in again — your session may have expired.');
+      return;
+    }
+    const { data, error } = await supabase
+      .from('custom_practice_plans')
+      .insert({
+        user_id: currentUser.id,
+        title: selectedPlan.title,
+        focus: selectedPlan.focus,
+        duration: selectedPlan.duration,
+        drills: selectedPlan.drills,
+      })
+      .select()
+      .single();
+    if (error) {
+      setPlanSaveMessage("Couldn't save that plan right now. Please try again.");
+      return;
+    }
+    setSelectedPlan(data);
+    setPlanSaveMessage('Saved — find it under My Saved Practice Plans.');
+    setTimeout(() => setPlanSaveMessage(''), 3000);
+    loadSavedPracticePlans();
   };
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -743,6 +797,38 @@ export default function App() {
             <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
               {!selectedPlan ? (
                 <>
+                  <AIPracticePlanGenerator onPlanGenerated={(plan) => { setPlanSaveMessage(''); setSelectedPlan(plan); }} />
+
+                  {savedPracticePlans.length > 0 && (
+                    <div style={{ marginBottom: '30px' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>💾 My Saved Practice Plans</h2>
+                      <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>Saved to your account — available on any device you sign in on.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                        {savedPracticePlans.map(plan => (
+                          <div key={plan.id} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{plan.title}</h3>
+                            <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '4px' }}>Focus: {plan.focus}</p>
+                            <p style={{ fontSize: '12px', color: colors.lightText, marginBottom: '12px' }}>Saved {new Date(plan.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => setSelectedPlan(plan)}
+                                style={{ padding: '8px 14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                              >
+                                View →
+                              </button>
+                              <button
+                                onClick={() => deleteSavedPracticePlan(plan.id)}
+                                style={{ padding: '8px 14px', backgroundColor: colors.white, color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>10 Elite Practice Plans</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                     {PRACTICE_PLANS.map(plan => (
@@ -757,8 +843,8 @@ export default function App() {
                 </>
               ) : (
                 <div>
-                  <button onClick={() => setSelectedPlan(null)} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to all plans</button>
-                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '5px' }}>Plan #{selectedPlan.num}: {selectedPlan.title}</h2>
+                  <button onClick={() => { setSelectedPlan(null); setPlanSaveMessage(''); }} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to all plans</button>
+                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '5px' }}>{selectedPlan.num ? `Plan #${selectedPlan.num}: ` : ''}{selectedPlan.title}</h2>
                   <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '4px' }}>Focus: {selectedPlan.focus}</p>
                   <p style={{ fontSize: '14px', color: colors.lightText, marginBottom: '20px' }}>Total time: {selectedPlan.duration}</p>
                   <div style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
@@ -769,6 +855,18 @@ export default function App() {
                       ))}
                     </ol>
                   </div>
+
+                  {!selectedPlan.num && !selectedPlan.id && (
+                    <button
+                      onClick={savePracticePlan}
+                      style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}
+                    >
+                      💾 Save This Plan
+                    </button>
+                  )}
+                  {planSaveMessage && (
+                    <p style={{ marginTop: '12px', fontSize: '13px', color: planSaveMessage.startsWith('Saved') ? '#1e8449' : '#c0392b', fontWeight: '600' }}>{planSaveMessage}</p>
+                  )}
                 </div>
               )}
             </div>
