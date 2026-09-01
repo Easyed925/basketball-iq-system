@@ -53,7 +53,7 @@ async function checkAndRecordUsage(supabaseAdmin, userId, prompt) {
   if (globalCountError) throw globalCountError;
   if (globalCount >= GLOBAL_LIMIT) return 'global';
 
-  const { error: insertError } = await supabaseAdmin.from('ai_generations').insert({ user_id: userId, prompt: prompt.slice(0, 400) });
+  const { error: insertError } = await supabaseAdmin.from('ai_generations').insert({ user_id: userId, prompt: prompt.slice(0, 400), type: 'play' });
   if (insertError) throw insertError;
 
   return null;
@@ -141,11 +141,11 @@ module.exports = async function handler(req, res) {
   try {
     limited = await checkAndRecordUsage(supabaseAdmin, userId, prompt);
   } catch (e) {
-    res.status(500).json({ error: 'Couldn’t check your usage limit right now. Please try again.' });
+    res.status(500).json({ error: "Couldn't check your usage limit right now. Please try again." });
     return;
   }
   if (limited === 'user') {
-    res.status(429).json({ error: 'You’ve hit your hourly limit for AI-generated plays. Try again in a bit, or design the play manually on the whiteboard.' });
+    res.status(429).json({ error: "You've hit your hourly limit for AI-generated plays. Try again in a bit, or design the play manually on the whiteboard." });
     return;
   }
   if (limited === 'global') {
@@ -154,20 +154,25 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const callClaude = async (extraInstruction) => {
+      const systemPrompt = extraInstruction ? `${SYSTEM_PROMPT}\n\n${extraInstruction}` : SYSTEM_PROMPT;
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+    };
+
+    let response = await callClaude();
 
     if (!response.ok) {
       const errText = await response.text();
@@ -175,8 +180,8 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const data = await response.json();
-    const textBlock = (data.content || []).find((b) => b.type === 'text');
+    let data = await response.json();
+    let textBlock = (data.content || []).find((b) => b.type === 'text');
     if (!textBlock) {
       const blockTypes = (data.content || []).map((b) => b.type).join(', ') || 'none';
       res.status(502).json({
@@ -186,20 +191,50 @@ module.exports = async function handler(req, res) {
     }
 
     let play;
+    let parseError;
     try {
       play = extractJson(textBlock.text);
     } catch (e) {
-      res.status(502).json({
-        error: `Claude’s response wasn’t valid play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
-      });
-      return;
+      parseError = e;
     }
 
-    if (!isValidPlay(play)) {
-      res.status(502).json({
-        error: `Claude’s response was missing required play data. Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
-      });
-      return;
+    // First attempt produced invalid JSON — most likely an unescaped
+    // quote inside a string value, or a response cut short. Retry once
+    // with a firmer instruction before giving up.
+    if (parseError || !isValidPlay(play)) {
+      const retryInstruction = 'CRITICAL: Your previous response was not valid, complete JSON. Escape every double-quote character inside string values as \\". Do not truncate — every object and array must be fully closed. Return ONLY the complete JSON object, nothing else.';
+      response = await callClaude(retryInstruction);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        res.status(502).json({ error: `Claude API error on retry (${response.status}): ${errText.slice(0, 200)}` });
+        return;
+      }
+
+      data = await response.json();
+      textBlock = (data.content || []).find((b) => b.type === 'text');
+      if (!textBlock) {
+        res.status(502).json({
+          error: `No text response from Claude on retry (stop reason: ${data.stop_reason || 'unknown'}). Try again or rephrase.`,
+        });
+        return;
+      }
+
+      try {
+        play = extractJson(textBlock.text);
+      } catch (e) {
+        res.status(502).json({
+          error: `Claude's response wasn't valid play data, even after a retry (stop reason: ${data.stop_reason || 'unknown'}). Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
+        });
+        return;
+      }
+
+      if (!isValidPlay(play)) {
+        res.status(502).json({
+          error: `Claude's response was missing required play data, even after a retry (stop reason: ${data.stop_reason || 'unknown'}). Try rephrasing your request. (Raw start: ${textBlock.text.slice(0, 500)})`,
+        });
+        return;
+      }
     }
 
     res.status(200).json(play);
