@@ -782,6 +782,10 @@ export default function App() {
             <div>
               <PlayAnimator key={libraryLoadKey} initialPlay={libraryPlay} onSaved={loadSavedPlays} />
 
+              <div style={{ marginTop: '40px' }}>
+                <AIPlayGenerator onPlayGenerated={(play) => { setLibraryPlay(play); setLibraryLoadKey(k => k + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+              </div>
+
               {savedPlays.length > 0 && (
                 <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
                   <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>💾 My Saved Plays</h2>
@@ -828,10 +832,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div style={{ marginTop: '40px' }}>
-                <AIPlayGenerator onPlayGenerated={(play) => { setLibraryPlay(play); setLibraryLoadKey(k => k + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
               </div>
 
               <div style={{ marginTop: '40px', backgroundColor: colors.white, padding: '30px', borderRadius: '12px' }}>
