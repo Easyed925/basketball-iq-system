@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PlayAnimator from './components/PlayAnimator';
 import AIPlayGenerator from './components/AIPlayGenerator';
 import AIPracticePlanGenerator from './components/AIPracticePlanGenerator';
+import AIScoutingReportGenerator from './components/AIScoutingReportGenerator';
 import CoachNotes from './components/CoachNotes';
 import { playLibrary, animatedPlays } from './data/playLibrary';
 import { supabase } from './services/supabaseClient';
@@ -67,6 +68,7 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [selectedSkill, setSelectedSkill] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [libraryPlay, setLibraryPlay] = useState(null);
   const [libraryLoadKey, setLibraryLoadKey] = useState(0);
   const [savedPlays, setSavedPlays] = useState([]);
@@ -169,6 +171,61 @@ export default function App() {
     setPlanSaveMessage('Saved — find it under My Saved Practice Plans.');
     setTimeout(() => setPlanSaveMessage(''), 3000);
     loadSavedPracticePlans();
+  };
+
+  const [savedScoutingReports, setSavedScoutingReports] = useState([]);
+  const [reportSaveMessage, setReportSaveMessage] = useState('');
+
+  const loadSavedScoutingReports = React.useCallback(async () => {
+    if (!user) {
+      setSavedScoutingReports([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('custom_scouting_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) setSavedScoutingReports(data);
+  }, [user]);
+
+  React.useEffect(() => {
+    loadSavedScoutingReports();
+  }, [loadSavedScoutingReports]);
+
+  const deleteSavedScoutingReport = async (id) => {
+    if (!window.confirm("Delete this saved scouting report? This can't be undone.")) return;
+    const { error } = await supabase.from('custom_scouting_reports').delete().eq('id', id);
+    if (!error) setSavedScoutingReports((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const saveScoutingReport = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData.session && sessionData.session.user;
+    if (!currentUser) {
+      setReportSaveMessage('Please sign in again — your session may have expired.');
+      return;
+    }
+    const { data, error } = await supabase
+      .from('custom_scouting_reports')
+      .insert({
+        user_id: currentUser.id,
+        opponent_name: selectedReport.opponentName,
+        offensive_tendencies: selectedReport.offensiveTendencies,
+        defensive_system: selectedReport.defensiveSystem,
+        key_players: selectedReport.keyPlayers,
+        matchup_advantages: selectedReport.matchupAdvantages,
+        game_plan: selectedReport.gamePlan,
+      })
+      .select()
+      .single();
+    if (error) {
+      setReportSaveMessage("Couldn't save that report right now. Please try again.");
+      return;
+    }
+    setSelectedReport(data);
+    setReportSaveMessage('Saved — find it under My Saved Scouting Reports.');
+    setTimeout(() => setReportSaveMessage(''), 3000);
+    loadSavedScoutingReports();
   };
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -916,17 +973,80 @@ export default function App() {
 
           {dashTab === 'scouting' && (
             <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', marginBottom: '40px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Scouting Reports</h2>
-              <div style={{ backgroundColor: colors.light, padding: '25px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Opponent Analysis Template</h3>
-                <div style={{ fontSize: '14px', color: colors.text, lineHeight: '1.9' }}>
-                  <p><strong>Offensive Tendencies:</strong> Pick and roll frequency, shooting range, pace preferences</p>
-                  <p><strong>Defensive System:</strong> Man-to-man or zone, pressure level, rebounding strength</p>
-                  <p><strong>Key Players:</strong> Star player strengths, weaknesses, foul trouble patterns</p>
-                  <p><strong>Matchup Advantages:</strong> Exploitable weaknesses, personnel mismatches</p>
-                  <p><strong>Game Plan:</strong> Offensive strategy, defensive adjustments</p>
+              {!selectedReport ? (
+                <>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Scouting Reports</h2>
+
+                  <AIScoutingReportGenerator onReportGenerated={(report) => { setReportSaveMessage(''); setSelectedReport(report); }} />
+
+                  {savedScoutingReports.length > 0 && (
+                    <div style={{ marginBottom: '30px' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>💾 My Saved Scouting Reports</h3>
+                      <p style={{ fontSize: '13px', color: colors.lightText, marginBottom: '20px' }}>Saved to your account — available on any device you sign in on.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                        {savedScoutingReports.map(report => (
+                          <div key={report.id} style={{ backgroundColor: colors.light, padding: '20px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                            <h4 style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{report.opponent_name}</h4>
+                            <p style={{ fontSize: '12px', color: colors.lightText, marginBottom: '12px' }}>Saved {new Date(report.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => setSelectedReport(report)}
+                                style={{ padding: '8px 14px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                              >
+                                View →
+                              </button>
+                              <button
+                                onClick={() => deleteSavedScoutingReport(report.id)}
+                                style={{ padding: '8px 14px', backgroundColor: colors.white, color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ backgroundColor: colors.light, padding: '25px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '15px' }}>Opponent Analysis Template</h3>
+                    <div style={{ fontSize: '14px', color: colors.text, lineHeight: '1.9' }}>
+                      <p><strong>Offensive Tendencies:</strong> Pick and roll frequency, shooting range, pace preferences</p>
+                      <p><strong>Defensive System:</strong> Man-to-man or zone, pressure level, rebounding strength</p>
+                      <p><strong>Key Players:</strong> Star player strengths, weaknesses, foul trouble patterns</p>
+                      <p><strong>Matchup Advantages:</strong> Exploitable weaknesses, personnel mismatches</p>
+                      <p><strong>Game Plan:</strong> Offensive strategy, defensive adjustments</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <button onClick={() => { setSelectedReport(null); setReportSaveMessage(''); }} style={{ padding: '8px 16px', backgroundColor: colors.light, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px' }}>← Back to scouting reports</button>
+                  <h2 style={{ fontSize: '22px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>{selectedReport.opponentName || selectedReport.opponent_name}</h2>
+
+                  <div style={{ backgroundColor: colors.light, padding: '25px', borderRadius: '8px', border: '2px solid ' + colors.accent }}>
+                    <div style={{ fontSize: '14px', color: colors.text, lineHeight: '1.9' }}>
+                      <p><strong>Offensive Tendencies:</strong> {selectedReport.offensiveTendencies || selectedReport.offensive_tendencies}</p>
+                      <p><strong>Defensive System:</strong> {selectedReport.defensiveSystem || selectedReport.defensive_system}</p>
+                      <p><strong>Key Players:</strong> {selectedReport.keyPlayers || selectedReport.key_players}</p>
+                      <p><strong>Matchup Advantages:</strong> {selectedReport.matchupAdvantages || selectedReport.matchup_advantages}</p>
+                      <p><strong>Game Plan:</strong> {selectedReport.gamePlan || selectedReport.game_plan}</p>
+                    </div>
+                  </div>
+
+                  {!selectedReport.id && (
+                    <button
+                      onClick={saveScoutingReport}
+                      style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: colors.accent, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}
+                    >
+                      💾 Save This Report
+                    </button>
+                  )}
+                  {reportSaveMessage && (
+                    <p style={{ marginTop: '12px', fontSize: '13px', color: reportSaveMessage.startsWith('Saved') ? '#1e8449' : '#c0392b', fontWeight: '600' }}>{reportSaveMessage}</p>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           )}
 
