@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 
 const EXAMPLE_PROMPTS = [
@@ -12,6 +12,123 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [interimText, setInterimText] = useState('');
+  const [voiceSupported, setVoiceSupported] = useState(true);
+
+  const recognitionRef = useRef(null);
+  const shouldRecordRef = useRef(false);
+  const pendingFinalRef = useRef(null); // a final result not yet confirmed settled
+  const restartTimeoutRef = useRef(null); // pending auto-restart, so Stop can cancel it
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    const commitPending = () => {
+      if (pendingFinalRef.current && pendingFinalRef.current.text) {
+        const text = pendingFinalRef.current.text;
+        setPrompt((p) => (p ? p.trim() + ' ' : '') + text);
+      }
+      pendingFinalRef.current = null;
+    };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript.trim();
+        if (result.isFinal) {
+          if (pendingFinalRef.current && pendingFinalRef.current.index === i) {
+            pendingFinalRef.current.text = transcript;
+          } else {
+            commitPending();
+            pendingFinalRef.current = { index: i, text: transcript };
+          }
+        } else {
+          interim += transcript;
+        }
+      }
+      setInterimText(interim);
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      commitPending();
+      shouldRecordRef.current = false;
+      setIsRecording(false);
+      setInterimText('');
+    };
+
+    recognition.onend = () => {
+      commitPending();
+      setInterimText('');
+      if (shouldRecordRef.current) {
+        restartTimeoutRef.current = setTimeout(() => {
+          restartTimeoutRef.current = null;
+          if (!shouldRecordRef.current) return;
+          try {
+            recognition.start();
+          } catch (e) {
+            // already starting; ignore
+          }
+        }, 250);
+      } else {
+        setIsRecording(false);
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      shouldRecordRef.current = false;
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
+      try {
+        recognition.stop();
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, []);
+
+  const toggleRecording = useCallback(() => {
+    if (!recognitionRef.current) return;
+    if (isRecording) {
+      shouldRecordRef.current = false;
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // ignore — may already be stopped
+      }
+      setIsRecording(false);
+      setInterimText('');
+    } else {
+      try {
+        pendingFinalRef.current = null;
+        shouldRecordRef.current = true;
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch (e) {
+        // start() throws if already started; ignore
+      }
+    }
+  }, [isRecording]);
+
   const [lastLoaded, setLastLoaded] = useState('');
 
   const generate = async (text) => {
@@ -56,22 +173,46 @@ const AIPlayGenerator = ({ onPlayGenerated }) => {
       </p>
 
       <div style={{ marginBottom: '15px' }}>
-        <input
-          type="text"
-          placeholder="e.g. give me a play to beat a 2-3 zone"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') generate(); }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            border: '2px solid #ff6b35',
-            borderRadius: '6px',
-            fontSize: '14px',
-            marginBottom: '10px',
-            boxSizing: 'border-box',
-          }}
-        />
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <input
+            type="text"
+            placeholder="e.g. give me a play to beat a 2-3 zone"
+            value={prompt + (interimText ? (prompt ? ' ' : '') + interimText : '')}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') generate(); }}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: '12px',
+              border: '2px solid #ff6b35',
+              borderRadius: '6px',
+              fontSize: '14px',
+              boxSizing: 'border-box',
+            }}
+          />
+          {voiceSupported && (
+            <button
+              type="button"
+              onClick={toggleRecording}
+              title={isRecording ? 'Stop dictating' : 'Dictate with your voice'}
+              style={{
+                padding: '0 16px',
+                backgroundColor: isRecording ? '#e74c3c' : '#1a1a2e',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                flexShrink: 0,
+              }}
+            >
+              {isRecording ? '⏹' : '🎤'}
+            </button>
+          )}
+        </div>
+        {isRecording && (
+          <p style={{ fontSize: '12px', color: '#e74c3c', fontWeight: '600', margin: '-4px 0 10px' }}>● Listening…</p>
+        )}
         <button
           onClick={() => generate()}
           disabled={loading || !prompt.trim()}
